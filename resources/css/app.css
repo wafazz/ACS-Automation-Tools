@@ -1,0 +1,57 @@
+/* ========================================
+   ACS - Agent Closing System
+   Global Styles: Bootstrap + AdminLTE + Custom
+   ======================================== */
+
+/* Bootstrap 5.3 Core */
+@import 'bootstrap/dist/css/bootstrap.min.css';
+
+/* Bootstrap Icons */
+@import 'bootstrap-icons/font/bootstrap-icons.css';
+
+/* AdminLTE 4 (post-login admin shell) */
+@import 'admin-lte/dist/css/adminlte.min.css';
+
+/* Flatpickr (date picker) */
+@import 'flatpickr/dist/flatpickr.min.css';
+
+/* DataTables Bootstrap 5 styling */
+@import 'datatables.net-bs5/css/dataTables.bootstrap5.min.css';
+
+/* SweetAlert2 default styles */
+@import 'sweetalert2/dist/sweetalert2.min.css';
+
+/* ========================================
+   Custom Overrides
+   ======================================== */
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* SweetAlert custom z-index above modals */
+.swal2-container {
+    z-index: 10050 !important;
+}
+
+/* React Hot Toast top spacing on mobile */
+[data-sonner-toaster],
+.react-hot-toast {
+    z-index: 10060 !important;
+}
+
+/* AdminLTE sidebar adjustments for mobile */
+@media (max-width: 991.98px) {
+    .app-sidebar {
+        z-index: 1040;
+    }
+}
+
+/* Smooth page transitions */
+.inertia-page-enter {
+    opacity: 0;
+}
+.inertia-page-enter-active {
+    opacity: 1;
+    transition: opacity 200ms ease-in;
+}
