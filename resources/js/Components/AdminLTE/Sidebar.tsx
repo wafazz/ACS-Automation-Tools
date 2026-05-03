@@ -27,6 +27,12 @@ const ADMIN_NAV_ITEMS: Array<Omit<SidebarItem, 'badgeKey'>> = [
     { label: 'Pack Catalog', icon: 'bi-box-seam', href: '/admin/packs', routeMatch: 'admin/packs' },
 ];
 
+const ADMIN_SETTINGS_ITEMS: Array<Omit<SidebarItem, 'badgeKey'>> = [
+    { label: 'Billplz', icon: 'bi-credit-card-2-front', href: '/admin/settings/billplz', routeMatch: 'admin/settings/billplz' },
+    { label: 'Brevo (Email)', icon: 'bi-envelope-at', href: '/admin/settings/brevo', routeMatch: 'admin/settings/brevo' },
+    { label: 'Onsend (WhatsApp)', icon: 'bi-whatsapp', href: '/admin/settings/onsend', routeMatch: 'admin/settings/onsend' },
+];
+
 interface SidebarCounts {
     reminders_open: number;
 }
@@ -96,6 +102,22 @@ export default function Sidebar() {
                                     ADMIN
                                 </li>
                                 {ADMIN_NAV_ITEMS.map((item) => (
+                                    <li key={item.href} className="nav-item">
+                                        <Link
+                                            href={item.href}
+                                            className={`nav-link ${isActive(item.routeMatch) ? 'active' : ''}`}
+                                        >
+                                            <i className={`nav-icon bi ${item.icon}`} />
+                                            <p>{item.label}</p>
+                                        </Link>
+                                    </li>
+                                ))}
+
+                                <li className="nav-header mt-2 text-warning small">
+                                    <i className="bi bi-gear me-1" />
+                                    INTEGRATIONS
+                                </li>
+                                {ADMIN_SETTINGS_ITEMS.map((item) => (
                                     <li key={item.href} className="nav-item">
                                         <Link
                                             href={item.href}

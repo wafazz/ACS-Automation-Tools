@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\AffiliatesController as AdminAffiliatesController;
 use App\Http\Controllers\Admin\PaymentsController as AdminPaymentsController;
+use App\Http\Controllers\Admin\SettingsController as AdminSettingsController;
 use App\Http\Controllers\Admin\StatsController as AdminStatsController;
 use App\Http\Controllers\Admin\TemplatePacksController as AdminTemplatePacksController;
 use App\Http\Controllers\Admin\UsersController as AdminUsersController;
@@ -117,6 +118,19 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('packs', [AdminTemplatePacksController::class, 'index'])->name('packs.index');
     Route::patch('packs/{pack}', [AdminTemplatePacksController::class, 'update'])->name('packs.update');
     Route::patch('packs/{pack}/active', [AdminTemplatePacksController::class, 'toggleActive'])->name('packs.active');
+
+    // Service settings (Billplz / Brevo / Onsend) — DB-backed encrypted
+    Route::get('settings/billplz', [AdminSettingsController::class, 'billplz'])->name('settings.billplz');
+    Route::patch('settings/billplz', [AdminSettingsController::class, 'updateBillplz'])->name('settings.billplz.update');
+    Route::post('settings/billplz/test', [AdminSettingsController::class, 'testBillplz'])->name('settings.billplz.test');
+
+    Route::get('settings/brevo', [AdminSettingsController::class, 'brevo'])->name('settings.brevo');
+    Route::patch('settings/brevo', [AdminSettingsController::class, 'updateBrevo'])->name('settings.brevo.update');
+    Route::post('settings/brevo/test', [AdminSettingsController::class, 'testBrevo'])->name('settings.brevo.test');
+
+    Route::get('settings/onsend', [AdminSettingsController::class, 'onsend'])->name('settings.onsend');
+    Route::patch('settings/onsend', [AdminSettingsController::class, 'updateOnsend'])->name('settings.onsend.update');
+    Route::post('settings/onsend/test', [AdminSettingsController::class, 'testOnsend'])->name('settings.onsend.test');
 });
 
 // Public referral landing — sets cookie + redirects to register

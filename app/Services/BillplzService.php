@@ -13,12 +13,16 @@ class BillplzService
     private string $collectionId;
     private bool $sandbox;
 
-    public function __construct()
+    public function __construct(SettingService $settings)
     {
-        $this->apiKey = trim((string) config('services.billplz.api_key'));
-        $this->xSignature = trim((string) config('services.billplz.x_signature'));
-        $this->collectionId = trim((string) config('services.billplz.collection_id'));
-        $this->sandbox = (bool) config('services.billplz.sandbox', true);
+        $db = $settings->get('billplz');
+
+        $this->apiKey = trim((string) ($db['api_key'] ?? config('services.billplz.api_key', '')));
+        $this->xSignature = trim((string) ($db['x_signature'] ?? config('services.billplz.x_signature', '')));
+        $this->collectionId = trim((string) ($db['collection_id'] ?? config('services.billplz.collection_id', '')));
+        $this->sandbox = isset($db['sandbox'])
+            ? (bool) $db['sandbox']
+            : (bool) config('services.billplz.sandbox', true);
     }
 
     public function isConfigured(): bool
