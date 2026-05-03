@@ -4,7 +4,25 @@ import { PageProps } from '@/types';
 export default function Welcome({ auth }: PageProps) {
     return (
         <>
-            <Head title="ACS — Close more deals, less effort" />
+            <Head>
+                <title>ACS — Close more deals, less effort</title>
+                <meta name="description" content="ACS is a lightweight WhatsApp-first CRM for sales agents — capture leads, automate Day 1/3/7 follow-ups, send pre-filled WhatsApp messages, and never miss a hot deal. Built for takaful, insurance, property, automotive, and dropship agents in Malaysia." />
+                <meta name="keywords" content="agent crm, takaful crm, whatsapp crm malaysia, lead management, follow up reminder, sales agent tool, property agent crm" />
+                <meta name="author" content="ACS" />
+
+                {/* Open Graph */}
+                <meta property="og:type" content="website" />
+                <meta property="og:title" content="ACS — Close more deals, less effort" />
+                <meta property="og:description" content="WhatsApp-first CRM for Malaysian sales agents. Capture leads, automate follow-ups, close more deals." />
+                <meta property="og:image" content="/icons/icon-512.png" />
+                <meta property="og:locale" content="en_MY" />
+
+                {/* Twitter Card */}
+                <meta name="twitter:card" content="summary_large_image" />
+                <meta name="twitter:title" content="ACS — Close more deals, less effort" />
+                <meta name="twitter:description" content="WhatsApp-first CRM for Malaysian sales agents." />
+                <meta name="twitter:image" content="/icons/icon-512.png" />
+            </Head>
 
             <div className="min-vh-100 bg-light">
                 {/* Top nav */}
@@ -142,6 +160,10 @@ export default function Welcome({ auth }: PageProps) {
                 <footer className="py-4 bg-white border-top">
                     <div className="container text-center text-muted small">
                         &copy; {new Date().getFullYear()} ACS — Agent Closing System. All rights reserved.
+                        <div className="mt-2">
+                            <Link href="/privacy" className="text-decoration-none text-muted me-3">Privacy</Link>
+                            <Link href="/terms" className="text-decoration-none text-muted">Terms of Service</Link>
+                        </div>
                     </div>
                 </footer>
             </div>

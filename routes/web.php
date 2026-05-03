@@ -136,6 +136,10 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
 // Public referral landing — sets cookie + redirects to register
 Route::get('r/{code}', [ReferralController::class, 'landing'])->name('referral.landing');
 
+// Legal pages
+Route::get('privacy', fn () => Inertia::render('Legal/Privacy'))->name('legal.privacy');
+Route::get('terms', fn () => Inertia::render('Legal/Terms'))->name('legal.terms');
+
 // Public webhook (no auth, no CSRF — exempted in bootstrap/app.php)
 Route::post('billplz/callback', [BillingController::class, 'callback'])->name('billing.callback');
 

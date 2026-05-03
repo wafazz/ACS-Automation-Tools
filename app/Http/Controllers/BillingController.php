@@ -8,6 +8,7 @@ use App\Models\Subscription;
 use App\Models\Template;
 use App\Services\AffiliateService;
 use App\Services\BillplzService;
+use App\Services\BrevoService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -223,6 +224,46 @@ class BillingController extends Controller
 
         // Award affiliate commission (if this user was referred)
         $this->affiliates->awardCommissionFor($payment);
+
+        // Send payment receipt email — never fail the webhook if email fails
+        $this->safeSendReceipt($payment, $planEnum->label());
+    }
+
+    private function safeSendReceipt(Payment $payment, string $planLabel): void
+    {
+        try {
+            $brevo = app(BrevoService::class);
+            if (! $brevo->isConfigured()) {
+                return;
+            }
+            $user = $payment->user;
+            if (! $user || ! $user->email) {
+                return;
+            }
+
+            $amount = number_format($payment->amountMyr(), 2);
+            $html = "<h2>Payment received — thanks!</h2>"
+                . "<p>Hi {$user->name},</p>"
+                . "<p>We've received your payment for <strong>{$planLabel}</strong>.</p>"
+                . "<table style='border-collapse:collapse;margin:16px 0;'>"
+                . "<tr><td style='padding:6px 12px;color:#666;'>Plan</td><td style='padding:6px 12px;'><strong>{$planLabel}</strong></td></tr>"
+                . "<tr><td style='padding:6px 12px;color:#666;'>Amount</td><td style='padding:6px 12px;'><strong>RM {$amount}</strong></td></tr>"
+                . "<tr><td style='padding:6px 12px;color:#666;'>Reference</td><td style='padding:6px 12px;font-family:monospace;'>#{$payment->id}</td></tr>"
+                . "</table>"
+                . "<p><a href='" . config('app.url') . "/dashboard' style='display:inline-block;padding:12px 24px;background:#0d6efd;color:#fff;border-radius:6px;text-decoration:none;'>Open Dashboard →</a></p>"
+                . "<p style='color:#888;font-size:12px;margin-top:24px;'>This is a transactional email from ACS. Reply if you have questions.</p>";
+
+            $brevo->sendEmail(
+                ['email' => $user->email, 'name' => $user->name],
+                "ACS — Payment received (RM {$amount})",
+                $html,
+            );
+        } catch (Throwable $e) {
+            Log::warning('Receipt email failed (non-blocking)', [
+                'payment_id' => $payment->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
