@@ -2,8 +2,12 @@ import AdminLTELayout from '@/Layouts/AdminLTELayout';
 import { PageProps } from '@/types';
 import { registerCharts } from '@/utils/charts';
 import { usePage } from '@inertiajs/react';
-import { useEffect } from 'react';
 import { Bar, Doughnut, Line } from 'react-chartjs-2';
+
+// Register Chart.js components at module load — must happen BEFORE the
+// chart components render on first paint, otherwise Chart.js throws
+// "category is not a registered scale" and the page goes blank.
+registerCharts();
 
 interface PageData {
     kpis: {
@@ -52,10 +56,6 @@ function formatHours(hours: number | null): string {
 export default function Index() {
     const { kpis, pipeline, goal, statusBreakdown, sourceBreakdown, trend } =
         usePage<PageProps<PageData>>().props;
-
-    useEffect(() => {
-        registerCharts();
-    }, []);
 
     const onPace = goal.achieved >= goal.expected_pace;
 
