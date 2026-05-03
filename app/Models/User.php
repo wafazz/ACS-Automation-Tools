@@ -23,6 +23,7 @@ class User extends Authenticatable
         'industry',
         'plan',
         'trial_ends_at',
+        'monthly_target',
     ];
 
     protected $hidden = [

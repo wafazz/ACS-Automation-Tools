@@ -20,6 +20,7 @@ export default function UpdateProfileInformation({
         email: user.email,
         phone: user.phone ?? '',
         industry: user.industry ?? '',
+        monthly_target: user.monthly_target ?? 10,
     });
 
     const submit: FormEventHandler = (e) => {
@@ -100,6 +101,26 @@ export default function UpdateProfileInformation({
                             ))}
                         </select>
                         {errors.industry && <div className="invalid-feedback">{errors.industry}</div>}
+                    </div>
+
+                    <div className="col-12 col-md-6">
+                        <label htmlFor="monthly_target" className="form-label fw-medium">
+                            Monthly closing goal
+                        </label>
+                        <div className="input-group">
+                            <input
+                                id="monthly_target"
+                                type="number"
+                                min={1}
+                                max={1000}
+                                className={`form-control ${errors.monthly_target ? 'is-invalid' : ''}`}
+                                value={data.monthly_target}
+                                onChange={(e) => setData('monthly_target', Number(e.target.value))}
+                            />
+                            <span className="input-group-text">deals/month</span>
+                            {errors.monthly_target && <div className="invalid-feedback">{errors.monthly_target}</div>}
+                        </div>
+                        <div className="form-text">Used in Analytics goal tracking.</div>
                     </div>
                 </div>
 

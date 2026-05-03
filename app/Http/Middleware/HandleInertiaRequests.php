@@ -43,6 +43,7 @@ class HandleInertiaRequests extends Middleware
                     'industry' => $user->industry?->value,
                     'plan' => $user->plan,
                     'trial_ends_at' => $user->trial_ends_at,
+                    'monthly_target' => $user->monthly_target,
                 ] : null,
             ],
             'sidebarCounts' => $user ? fn () => [

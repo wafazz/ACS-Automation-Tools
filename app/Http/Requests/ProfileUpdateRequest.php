@@ -27,6 +27,7 @@ class ProfileUpdateRequest extends FormRequest
             ],
             'phone' => ['nullable', 'string', 'max:20'],
             'industry' => ['nullable', Rule::enum(Industry::class)],
+            'monthly_target' => ['nullable', 'integer', 'min:1', 'max:1000'],
         ];
     }
 }
