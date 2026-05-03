@@ -45,6 +45,13 @@ class HandleInertiaRequests extends Middleware
                     'trial_ends_at' => $user->trial_ends_at,
                 ] : null,
             ],
+            'sidebarCounts' => $user ? fn () => [
+                'reminders_open' => $user->reminders()
+                    ->whereNull('completed_at')
+                    ->whereNull('dismissed_at')
+                    ->where('due_at', '<=', now()->endOfDay())
+                    ->count(),
+            ] : null,
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
                 'error' => fn () => $request->session()->get('error'),

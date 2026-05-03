@@ -49,6 +49,28 @@ export interface LeadStatusHistoryEntry {
     changer?: { id: number; name: string } | null;
 }
 
+export type ReminderTypeValue = 'manual' | 'auto_day_1' | 'auto_day_3' | 'auto_day_7';
+export type ReminderTab = 'today' | 'upcoming' | 'overdue' | 'completed';
+
+export interface Reminder {
+    id: number;
+    user_id: number;
+    lead_id: number | null;
+    type: ReminderTypeValue;
+    due_at: string;
+    completed_at: string | null;
+    dismissed_at: string | null;
+    snooze_count: number;
+    note: string | null;
+    created_at: string;
+    lead?: {
+        id: number;
+        name: string;
+        phone: string;
+        status: LeadStatusValue;
+    } | null;
+}
+
 export type PageProps<T = Record<string, unknown>> = T & {
     auth: {
         user: User | null;

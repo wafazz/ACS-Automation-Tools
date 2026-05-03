@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ReminderController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -35,6 +36,15 @@ Route::get('/dashboard', function () {
         ->limit(5)
         ->get(['id', 'name', 'phone', 'status', 'created_at']);
 
+    $todayReminders = $user->reminders()
+        ->with('lead:id,name,phone')
+        ->dueToday()
+        ->orderBy('due_at')
+        ->limit(5)
+        ->get();
+
+    $overdueCount = $user->reminders()->overdue()->count();
+
     return Inertia::render('Dashboard', [
         'stats' => [
             'total_leads' => $totalLeads,
@@ -43,6 +53,8 @@ Route::get('/dashboard', function () {
             'conversion_rate' => $conversionRate,
         ],
         'recentLeads' => $recentLeads,
+        'todayReminders' => $todayReminders,
+        'overdueCount' => $overdueCount,
         'statuses' => \App\Enums\LeadStatus::options(),
     ]);
 })->middleware(['auth', 'verified'])->name('dashboard');
@@ -55,6 +67,13 @@ Route::middleware('auth')->group(function () {
     Route::resource('leads', LeadController::class);
     Route::patch('leads/{lead}/status', [LeadController::class, 'updateStatus'])->name('leads.status');
     Route::post('leads/{lead}/notes', [LeadController::class, 'addNote'])->name('leads.notes');
+
+    Route::get('reminders', [ReminderController::class, 'index'])->name('reminders.index');
+    Route::post('reminders', [ReminderController::class, 'store'])->name('reminders.store');
+    Route::patch('reminders/{reminder}/complete', [ReminderController::class, 'complete'])->name('reminders.complete');
+    Route::patch('reminders/{reminder}/snooze', [ReminderController::class, 'snooze'])->name('reminders.snooze');
+    Route::patch('reminders/{reminder}/dismiss', [ReminderController::class, 'dismiss'])->name('reminders.dismiss');
+    Route::delete('reminders/{reminder}', [ReminderController::class, 'destroy'])->name('reminders.destroy');
 });
 
 require __DIR__.'/auth.php';

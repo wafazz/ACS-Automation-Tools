@@ -44,4 +44,9 @@ class Lead extends Model
     {
         return $this->hasMany(LeadStatusHistory::class)->latest();
     }
+
+    public function reminders(): HasMany
+    {
+        return $this->hasMany(Reminder::class);
+    }
 }

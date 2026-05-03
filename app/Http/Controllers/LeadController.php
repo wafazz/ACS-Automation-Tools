@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\LeadStatus;
+use App\Enums\ReminderType;
 use App\Http\Requests\StoreLeadRequest;
 use App\Http\Requests\UpdateLeadRequest;
 use App\Models\Lead;
@@ -67,6 +68,15 @@ class LeadController extends Controller
             'to_status' => $lead->status->value,
             'note' => 'Lead created.',
         ]);
+
+        // Auto-spawn Day 1 / 3 / 7 follow-up reminders
+        foreach (ReminderType::autoTypes() as $type) {
+            $lead->reminders()->create([
+                'user_id' => Auth::id(),
+                'type' => $type->value,
+                'due_at' => now()->addDays($type->defaultDelayDays())->setTime(9, 0),
+            ]);
+        }
 
         return redirect()->route('leads.show', $lead)->with('success', 'Lead created.');
     }

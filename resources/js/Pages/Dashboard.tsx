@@ -1,8 +1,9 @@
 import AdminLTELayout from '@/Layouts/AdminLTELayout';
 import StatusBadge from '@/Components/Leads/StatusBadge';
 import EmptyState from '@/Components/UX/EmptyState';
-import { Lead, PageProps, StatusOption } from '@/types';
-import { Link, usePage } from '@inertiajs/react';
+import { Lead, PageProps, Reminder, StatusOption } from '@/types';
+import { Link, router, usePage } from '@inertiajs/react';
+import toast from 'react-hot-toast';
 
 interface DashboardProps {
     stats: {
@@ -12,12 +13,22 @@ interface DashboardProps {
         conversion_rate: number;
     };
     recentLeads: Lead[];
+    todayReminders: Reminder[];
+    overdueCount: number;
     statuses: StatusOption[];
 }
 
 export default function Dashboard() {
-    const { auth, stats, recentLeads, statuses } = usePage<PageProps<DashboardProps>>().props;
+    const { auth, stats, recentLeads, todayReminders, overdueCount, statuses } =
+        usePage<PageProps<DashboardProps>>().props;
     const user = auth.user!;
+
+    const completeReminder = (id: number) => {
+        router.patch(route('reminders.complete', id), {}, {
+            preserveScroll: true,
+            onSuccess: () => toast.success('Reminder completed.'),
+        });
+    };
 
     const kpis = [
         { label: 'Total Leads', value: stats.total_leads, icon: 'bi-people', bg: 'bg-primary' },
@@ -121,17 +132,62 @@ export default function Dashboard() {
 
                 <div className="col-12 col-lg-4">
                     <div className="card border-0 shadow-sm h-100">
-                        <div className="card-header bg-white border-bottom">
+                        <div className="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
                             <h5 className="card-title mb-0">
                                 <i className="bi bi-bell me-2" />
                                 Today's Reminders
+                                {overdueCount > 0 && (
+                                    <span className="badge text-bg-danger ms-2">
+                                        {overdueCount} overdue
+                                    </span>
+                                )}
                             </h5>
+                            <Link href={`${route('reminders.index')}?tab=today`} className="btn btn-sm btn-outline-primary">
+                                View all
+                            </Link>
                         </div>
-                        <div className="card-body text-center py-5">
-                            <i className="bi bi-check2-circle text-success" style={{ fontSize: '3rem' }} />
-                            <p className="text-muted mt-3 mb-0 small">
-                                Reminders launch in Phase 4.
-                            </p>
+                        <div className="card-body p-0">
+                            {todayReminders.length === 0 ? (
+                                <div className="text-center py-5">
+                                    <i className="bi bi-check2-circle text-success" style={{ fontSize: '3rem' }} />
+                                    <p className="text-muted mt-3 mb-0 small">
+                                        All clear. No reminders due today.
+                                    </p>
+                                </div>
+                            ) : (
+                                <ul className="list-group list-group-flush">
+                                    {todayReminders.map((r) => (
+                                        <li key={r.id} className="list-group-item d-flex justify-content-between align-items-start gap-2">
+                                            <div className="flex-grow-1">
+                                                {r.lead ? (
+                                                    <Link
+                                                        href={route('leads.show', r.lead.id)}
+                                                        className="fw-medium text-decoration-none small"
+                                                    >
+                                                        {r.lead.name}
+                                                    </Link>
+                                                ) : (
+                                                    <span className="small fst-italic text-muted">General</span>
+                                                )}
+                                                <div className="text-muted small">
+                                                    <i className="bi bi-clock me-1" />
+                                                    {new Date(r.due_at).toLocaleTimeString('en-MY', {
+                                                        hour: '2-digit', minute: '2-digit',
+                                                    })}
+                                                </div>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                className="btn btn-sm btn-outline-success"
+                                                onClick={() => completeReminder(r.id)}
+                                                title="Mark complete"
+                                            >
+                                                <i className="bi bi-check-lg" />
+                                            </button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
                         </div>
                     </div>
                 </div>
