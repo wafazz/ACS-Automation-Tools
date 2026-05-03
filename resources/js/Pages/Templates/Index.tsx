@@ -6,12 +6,20 @@ import { Link, router, usePage } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 
+interface OwnedPack {
+    id: number;
+    slug: string;
+    name: string;
+    icon: string | null;
+}
+
 interface PageData {
     templates: Template[];
+    ownedPacks: OwnedPack[];
 }
 
 export default function Index() {
-    const { templates } = usePage<PageProps<PageData>>().props;
+    const { templates, ownedPacks } = usePage<PageProps<PageData>>().props;
     const ask = useConfirm();
     const [search, setSearch] = useState('');
 
@@ -49,6 +57,34 @@ export default function Index() {
                 </Link>
             }
         >
+            {ownedPacks.length > 0 && (
+                <div className="card border-0 shadow-sm mb-3">
+                    <div className="card-body p-3">
+                        <div className="d-flex justify-content-between align-items-center mb-2">
+                            <h6 className="fw-semibold mb-0">
+                                <i className="bi bi-bag-check me-2 text-success" />
+                                My Packs ({ownedPacks.length})
+                            </h6>
+                            <Link href={route('store.index')} className="small text-decoration-none">
+                                Browse more →
+                            </Link>
+                        </div>
+                        <div className="d-flex gap-2 flex-wrap">
+                            {ownedPacks.map((pack) => (
+                                <Link
+                                    key={pack.id}
+                                    href={route('store.show', pack.slug)}
+                                    className="badge bg-light text-body text-decoration-none border px-3 py-2"
+                                >
+                                    <i className={`bi ${pack.icon ?? 'bi-box-seam'} me-1 text-primary`} />
+                                    {pack.name}
+                                </Link>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <div className="card border-0 shadow-sm mb-3">
                 <div className="card-body p-3">
                     <div className="input-group">

@@ -62,6 +62,31 @@ export interface Template {
     updated_at?: string;
 }
 
+export interface PackCard {
+    id: number;
+    slug: string;
+    name: string;
+    industry: string | null;
+    industry_label?: string | null;
+    price_myr: number;
+    description: string | null;
+    icon: string | null;
+    item_count?: number;
+    owned: boolean;
+}
+
+export interface PackDetail {
+    id: number;
+    slug: string;
+    name: string;
+    industry: string | null;
+    industry_label: string | null;
+    price_myr: number;
+    description: string | null;
+    icon: string | null;
+    items: Array<{ id: number; title: string; body: string }>;
+}
+
 export interface TemplateVariable {
     key: string;
     label: string;

@@ -16,13 +16,28 @@ class TemplateController extends Controller
 {
     public function index(): Response
     {
-        $templates = Auth::user()->templates()
+        $user = Auth::user();
+
+        $templates = $user->templates()
             ->orderByDesc('is_default')
             ->orderBy('title')
             ->get();
 
+        $ownedPacks = $user->ownedPacks()
+            ->select('template_packs.id', 'template_packs.slug', 'template_packs.name', 'template_packs.icon')
+            ->orderByPivot('purchased_at', 'desc')
+            ->get()
+            ->map(fn ($p) => [
+                'id' => $p->id,
+                'slug' => $p->slug,
+                'name' => $p->name,
+                'icon' => $p->icon,
+            ])
+            ->toArray();
+
         return Inertia::render('Templates/Index', [
             'templates' => $templates,
+            'ownedPacks' => $ownedPacks,
         ]);
     }
 

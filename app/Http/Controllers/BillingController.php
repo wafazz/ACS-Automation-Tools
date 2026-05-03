@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\Plan;
 use App\Models\Payment;
 use App\Models\Subscription;
+use App\Models\Template;
 use App\Services\BillplzService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -176,6 +177,13 @@ class BillingController extends Controller
             'raw_payload' => $payload,
         ]);
 
+        // Pack purchase path
+        if ($payment->template_pack_id !== null) {
+            $this->fulfillPackPurchase($payment);
+            return;
+        }
+
+        // Subscription path
         $subscription = $payment->subscription;
         if (! $subscription) {
             return;
@@ -209,5 +217,46 @@ class BillingController extends Controller
             'plan' => $planEnum->value,
             'trial_ends_at' => null,
         ]);
+    }
+
+    /**
+     * On successful pack payment: attach pack to user + clone all items as the
+     * user's own templates so they can edit/customize freely.
+     */
+    private function fulfillPackPurchase(Payment $payment): void
+    {
+        $pack = $payment->templatePack;
+        if (! $pack) {
+            return;
+        }
+
+        $user = $payment->user;
+        if (! $user) {
+            return;
+        }
+
+        // Idempotency: skip if user already owns this pack (e.g. webhook re-fired)
+        if ($user->ownedPacks()->where('template_packs.id', $pack->id)->exists()) {
+            return;
+        }
+
+        $user->ownedPacks()->attach($pack->id, [
+            'payment_id' => $payment->id,
+            'purchased_at' => now(),
+        ]);
+
+        // Clone every pack item into the user's templates
+        $industryValue = $pack->industry?->value;
+        foreach ($pack->items as $item) {
+            Template::create([
+                'user_id' => $user->id,
+                'title' => $item->title,
+                'body' => $item->body,
+                'industry' => $industryValue,
+                'is_default' => false,
+            ]);
+        }
+
+        $pack->increment('purchase_count');
     }
 }

@@ -28,6 +28,8 @@ class DatabaseSeeder extends Seeder
 
         DefaultTemplateSeeder::seedFor($user);
 
+        $this->call(TemplatePackSeeder::class);
+
         $leads = Lead::factory()->count(25)->forUser($user)->create();
 
         // Spawn auto Day 1/3/7 reminders for each lead, anchored to lead created_at

@@ -5,6 +5,7 @@ use App\Http\Controllers\BillingController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReminderController;
+use App\Http\Controllers\StoreController;
 use App\Http\Controllers\TemplateController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -85,6 +86,10 @@ Route::middleware('auth')->group(function () {
     Route::get('pricing', [BillingController::class, 'pricing'])->name('billing.pricing');
     Route::post('billing/checkout/{plan}', [BillingController::class, 'checkout'])->name('billing.checkout');
     Route::get('billing/return/{payment}', [BillingController::class, 'return'])->name('billing.return');
+
+    Route::get('store', [StoreController::class, 'index'])->name('store.index');
+    Route::get('store/{pack:slug}', [StoreController::class, 'show'])->name('store.show');
+    Route::post('store/{pack:slug}/checkout', [StoreController::class, 'checkout'])->name('store.checkout');
 });
 
 // Public webhook (no auth, no CSRF — exempted in bootstrap/app.php)

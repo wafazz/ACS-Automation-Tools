@@ -11,6 +11,7 @@ class Payment extends Model
     protected $fillable = [
         'user_id',
         'subscription_id',
+        'template_pack_id',
         'plan',
         'amount_cents',
         'currency',
@@ -38,6 +39,11 @@ class Payment extends Model
     public function subscription(): BelongsTo
     {
         return $this->belongsTo(Subscription::class);
+    }
+
+    public function templatePack(): BelongsTo
+    {
+        return $this->belongsTo(TemplatePack::class);
     }
 
     public function amountMyr(): float

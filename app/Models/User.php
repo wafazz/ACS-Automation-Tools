@@ -72,6 +72,13 @@ class User extends Authenticatable
         return $this->hasMany(Payment::class);
     }
 
+    public function ownedPacks(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(TemplatePack::class, 'user_template_packs')
+            ->withPivot(['payment_id', 'purchased_at'])
+            ->withTimestamps();
+    }
+
     public function activeSubscription(): ?Subscription
     {
         return $this->subscriptions()
