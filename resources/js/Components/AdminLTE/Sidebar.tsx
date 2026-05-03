@@ -1,3 +1,4 @@
+import { PageProps } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
 
 interface SidebarItem {
@@ -18,13 +19,22 @@ const NAV_ITEMS: SidebarItem[] = [
     { label: 'Analytics', icon: 'bi-graph-up', href: '/analytics', routeMatch: 'analytics' },
 ];
 
+const ADMIN_NAV_ITEMS: Array<Omit<SidebarItem, 'badgeKey'>> = [
+    { label: 'Stats', icon: 'bi-bar-chart-line', href: '/admin', routeMatch: 'admin' },
+    { label: 'Users', icon: 'bi-people-fill', href: '/admin/users', routeMatch: 'admin/users' },
+    { label: 'Payments', icon: 'bi-receipt', href: '/admin/payments', routeMatch: 'admin/payments' },
+    { label: 'Affiliates', icon: 'bi-cash-coin', href: '/admin/affiliates', routeMatch: 'admin/affiliates' },
+    { label: 'Pack Catalog', icon: 'bi-box-seam', href: '/admin/packs', routeMatch: 'admin/packs' },
+];
+
 interface SidebarCounts {
     reminders_open: number;
 }
 
 export default function Sidebar() {
-    const { url, props } = usePage();
+    const { url, props } = usePage<PageProps>();
     const counts = (props.sidebarCounts as SidebarCounts | null) ?? null;
+    const isAdmin = !!props.auth.user?.is_admin;
 
     const isActive = (match: string) => url.startsWith('/' + match);
     const getBadge = (item: SidebarItem): number => {
@@ -78,6 +88,26 @@ export default function Sidebar() {
                                 <p>Profile</p>
                             </Link>
                         </li>
+
+                        {isAdmin && (
+                            <>
+                                <li className="nav-header mt-3 text-warning">
+                                    <i className="bi bi-shield-lock me-1" />
+                                    ADMIN
+                                </li>
+                                {ADMIN_NAV_ITEMS.map((item) => (
+                                    <li key={item.href} className="nav-item">
+                                        <Link
+                                            href={item.href}
+                                            className={`nav-link ${isActive(item.routeMatch) ? 'active' : ''}`}
+                                        >
+                                            <i className={`nav-icon bi ${item.icon}`} />
+                                            <p>{item.label}</p>
+                                        </Link>
+                                    </li>
+                                ))}
+                            </>
+                        )}
                     </ul>
                 </nav>
             </div>

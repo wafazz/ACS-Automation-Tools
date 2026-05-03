@@ -1,5 +1,10 @@
 <?php
 
+use App\Http\Controllers\Admin\AffiliatesController as AdminAffiliatesController;
+use App\Http\Controllers\Admin\PaymentsController as AdminPaymentsController;
+use App\Http\Controllers\Admin\StatsController as AdminStatsController;
+use App\Http\Controllers\Admin\TemplatePacksController as AdminTemplatePacksController;
+use App\Http\Controllers\Admin\UsersController as AdminUsersController;
 use App\Http\Controllers\AffiliateController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\BillingController;
@@ -97,6 +102,21 @@ Route::middleware('auth')->group(function () {
     Route::post('affiliate/opt-in', [AffiliateController::class, 'optIn'])->name('affiliate.opt-in');
     Route::get('affiliate/payouts', [AffiliateController::class, 'payouts'])->name('affiliate.payouts');
     Route::post('affiliate/payouts', [AffiliateController::class, 'requestPayout'])->name('affiliate.payouts.request');
+});
+
+// Admin routes
+Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/', [AdminStatsController::class, 'index'])->name('stats');
+    Route::get('users', [AdminUsersController::class, 'index'])->name('users.index');
+    Route::patch('users/{user}/plan', [AdminUsersController::class, 'updatePlan'])->name('users.plan');
+    Route::patch('users/{user}/admin', [AdminUsersController::class, 'toggleAdmin'])->name('users.admin');
+    Route::get('payments', [AdminPaymentsController::class, 'index'])->name('payments.index');
+    Route::get('affiliates', [AdminAffiliatesController::class, 'index'])->name('affiliates.index');
+    Route::patch('payouts/{payout}/paid', [AdminAffiliatesController::class, 'markPayoutPaid'])->name('payouts.paid');
+    Route::patch('payouts/{payout}/reject', [AdminAffiliatesController::class, 'rejectPayout'])->name('payouts.reject');
+    Route::get('packs', [AdminTemplatePacksController::class, 'index'])->name('packs.index');
+    Route::patch('packs/{pack}', [AdminTemplatePacksController::class, 'update'])->name('packs.update');
+    Route::patch('packs/{pack}/active', [AdminTemplatePacksController::class, 'toggleActive'])->name('packs.active');
 });
 
 // Public referral landing — sets cookie + redirects to register

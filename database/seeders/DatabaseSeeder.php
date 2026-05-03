@@ -17,6 +17,18 @@ class DatabaseSeeder extends Seeder
 
     public function run(): void
     {
+        // Admin account (password: 'password' from UserFactory default)
+        User::factory()->create([
+            'name' => 'ACS Admin',
+            'email' => 'admin@acs.local',
+            'phone' => '0123456788',
+            'industry' => 'other',
+            'plan' => 'founder_ltd',
+            'trial_ends_at' => null,
+            'is_admin' => true,
+        ]);
+
+        // Demo agent account
         $user = User::factory()->create([
             'name' => 'Fakrul Demo',
             'email' => 'demo@acs.local',

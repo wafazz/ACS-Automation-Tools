@@ -8,6 +8,7 @@ export interface User {
     plan: string;
     trial_ends_at?: string | null;
     monthly_target?: number;
+    is_admin?: boolean;
 }
 
 export interface IndustryOption {

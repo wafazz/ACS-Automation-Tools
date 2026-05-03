@@ -25,6 +25,7 @@ class User extends Authenticatable
         'plan',
         'trial_ends_at',
         'monthly_target',
+        'is_admin',
     ];
 
     protected $hidden = [
@@ -39,6 +40,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'industry' => Industry::class,
             'trial_ends_at' => 'datetime',
+            'is_admin' => 'boolean',
         ];
     }
 

@@ -46,6 +46,7 @@ class HandleInertiaRequests extends Middleware
                     'plan' => $user->plan,
                     'trial_ends_at' => $user->trial_ends_at,
                     'monthly_target' => $user->monthly_target,
+                    'is_admin' => (bool) $user->is_admin,
                 ] : null,
                 'billing' => $user ? [
                     'plan_value' => $plan?->value,
