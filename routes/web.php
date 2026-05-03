@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AnalyticsController;
+use App\Http\Controllers\BillingController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReminderController;
@@ -80,6 +81,13 @@ Route::middleware('auth')->group(function () {
     Route::resource('templates', TemplateController::class)->except(['show']);
 
     Route::get('analytics', [AnalyticsController::class, 'index'])->name('analytics.index');
+
+    Route::get('pricing', [BillingController::class, 'pricing'])->name('billing.pricing');
+    Route::post('billing/checkout/{plan}', [BillingController::class, 'checkout'])->name('billing.checkout');
+    Route::get('billing/return/{payment}', [BillingController::class, 'return'])->name('billing.return');
 });
+
+// Public webhook (no auth, no CSRF — exempted in bootstrap/app.php)
+Route::post('billplz/callback', [BillingController::class, 'callback'])->name('billing.callback');
 
 require __DIR__.'/auth.php';

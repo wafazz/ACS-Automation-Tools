@@ -57,13 +57,20 @@ class LeadController extends Controller
 
     public function store(StoreLeadRequest $request): RedirectResponse
     {
+        $user = Auth::user();
+        $maxLeads = $user->currentPlan()->maxLeads();
+        if ($maxLeads !== null && $user->leads()->count() >= $maxLeads) {
+            return redirect()->route('billing.pricing')
+                ->with('error', "You've hit the {$maxLeads}-lead limit on your current plan. Upgrade to add more.");
+        }
+
         $data = $request->validated();
         $data['status'] ??= LeadStatus::New->value;
 
-        $lead = Auth::user()->leads()->create($data);
+        $lead = $user->leads()->create($data);
 
         $lead->statusHistory()->create([
-            'changed_by' => Auth::id(),
+            'changed_by' => $user->id,
             'from_status' => null,
             'to_status' => $lead->status->value,
             'note' => 'Lead created.',
@@ -72,7 +79,7 @@ class LeadController extends Controller
         // Auto-spawn Day 1 / 3 / 7 follow-up reminders
         foreach (ReminderType::autoTypes() as $type) {
             $lead->reminders()->create([
-                'user_id' => Auth::id(),
+                'user_id' => $user->id,
                 'type' => $type->value,
                 'due_at' => now()->addDays($type->defaultDelayDays())->setTime(9, 0),
             ]);

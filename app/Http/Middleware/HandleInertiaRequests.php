@@ -30,6 +30,8 @@ class HandleInertiaRequests extends Middleware
     public function share(Request $request): array
     {
         $user = $request->user();
+        $plan = $user?->currentPlan();
+        $sub = $user?->activeSubscription();
 
         return [
             ...parent::share($request),
@@ -44,6 +46,17 @@ class HandleInertiaRequests extends Middleware
                     'plan' => $user->plan,
                     'trial_ends_at' => $user->trial_ends_at,
                     'monthly_target' => $user->monthly_target,
+                ] : null,
+                'billing' => $user ? [
+                    'plan_value' => $plan?->value,
+                    'plan_label' => $plan?->label(),
+                    'badge' => $plan?->badgeClass(),
+                    'is_trial' => $plan?->value === 'trial',
+                    'is_lifetime' => $plan?->durationDays() === null,
+                    'trial_days_left' => $plan?->value === 'trial' && $user->trial_ends_at
+                        ? max(0, (int) now()->diffInDays($user->trial_ends_at, false))
+                        : null,
+                    'sub_ends_at' => $sub?->ends_at,
                 ] : null,
             ],
             'sidebarCounts' => $user ? fn () => [

@@ -90,9 +90,20 @@ export interface Reminder {
     } | null;
 }
 
+export interface BillingInfo {
+    plan_value: string | null;
+    plan_label: string | null;
+    badge: string | null;
+    is_trial: boolean;
+    is_lifetime: boolean;
+    trial_days_left: number | null;
+    sub_ends_at: string | null;
+}
+
 export type PageProps<T = Record<string, unknown>> = T & {
     auth: {
         user: User | null;
+        billing: BillingInfo | null;
     };
     flash: {
         success?: string;

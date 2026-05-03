@@ -37,7 +37,14 @@ class TemplateController extends Controller
 
     public function store(StoreTemplateRequest $request): RedirectResponse
     {
-        Auth::user()->templates()->create($request->validated());
+        $user = Auth::user();
+        $maxTemplates = $user->currentPlan()->maxTemplates();
+        if ($maxTemplates !== null && $user->templates()->count() >= $maxTemplates) {
+            return redirect()->route('billing.pricing')
+                ->with('error', "You've hit the {$maxTemplates}-template limit on your current plan. Upgrade for unlimited.");
+        }
+
+        $user->templates()->create($request->validated());
 
         return redirect()->route('templates.index')->with('success', 'Template created.');
     }

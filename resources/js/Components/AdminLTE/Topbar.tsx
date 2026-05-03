@@ -6,7 +6,15 @@ import { PageProps } from '@/types';
 export default function Topbar() {
     const { auth } = usePage<PageProps>().props;
     const user = auth.user!;
+    const billing = auth.billing;
     const ask = useConfirm();
+
+    const showTrialBadge = billing?.is_trial;
+    const showRenewBadge =
+        !billing?.is_trial &&
+        !billing?.is_lifetime &&
+        billing?.sub_ends_at &&
+        new Date(billing.sub_ends_at).getTime() - Date.now() < 3 * 24 * 60 * 60 * 1000;
 
     const handleLogout = async (e: React.MouseEvent) => {
         e.preventDefault();
@@ -42,6 +50,30 @@ export default function Topbar() {
                 </ul>
 
                 <ul className="navbar-nav ms-auto">
+                    {/* Plan badge / Upgrade nudge */}
+                    {showTrialBadge && (
+                        <li className="nav-item d-none d-md-flex align-items-center me-2">
+                            <Link
+                                href="/pricing"
+                                className="badge text-bg-warning text-decoration-none px-2 py-2"
+                            >
+                                <i className="bi bi-stars me-1" />
+                                Trial — {billing!.trial_days_left ?? 0} day{billing!.trial_days_left === 1 ? '' : 's'} left · Upgrade
+                            </Link>
+                        </li>
+                    )}
+                    {showRenewBadge && (
+                        <li className="nav-item d-none d-md-flex align-items-center me-2">
+                            <Link
+                                href="/pricing"
+                                className="badge text-bg-danger text-decoration-none px-2 py-2"
+                            >
+                                <i className="bi bi-exclamation-circle me-1" />
+                                Renew soon
+                            </Link>
+                        </li>
+                    )}
+
                     {/* Notifications placeholder */}
                     <li className="nav-item dropdown">
                         <a
@@ -69,10 +101,23 @@ export default function Topbar() {
                             <span className="d-none d-md-inline">{user.name}</span>
                         </a>
                         <ul className="dropdown-menu dropdown-menu-end">
+                            <li className="px-3 py-2">
+                                <small className="text-muted d-block">Current plan</small>
+                                <span className={`badge ${billing?.badge ?? 'bg-secondary'} mt-1`}>
+                                    {billing?.plan_label ?? '—'}
+                                </span>
+                            </li>
+                            <li><hr className="dropdown-divider" /></li>
                             <li>
                                 <Link href="/profile" className="dropdown-item">
                                     <i className="bi bi-person me-2" />
                                     Profile
+                                </Link>
+                            </li>
+                            <li>
+                                <Link href="/pricing" className="dropdown-item">
+                                    <i className="bi bi-credit-card me-2" />
+                                    Plans &amp; Billing
                                 </Link>
                             </li>
                             <li><hr className="dropdown-divider" /></li>
