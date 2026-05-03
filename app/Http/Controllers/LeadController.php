@@ -87,9 +87,15 @@ class LeadController extends Controller
 
         $lead->load(['statusHistory.changer:id,name']);
 
+        $templates = Auth::user()->templates()
+            ->orderByDesc('is_default')
+            ->orderBy('title')
+            ->get(['id', 'title', 'body']);
+
         return Inertia::render('Leads/Show', [
             'lead' => $lead,
             'statuses' => LeadStatus::options(),
+            'templates' => $templates,
         ]);
     }
 

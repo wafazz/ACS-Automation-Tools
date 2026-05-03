@@ -49,6 +49,24 @@ export interface LeadStatusHistoryEntry {
     changer?: { id: number; name: string } | null;
 }
 
+export interface Template {
+    id: number;
+    user_id?: number;
+    title: string;
+    body: string;
+    industry?: string | null;
+    is_default: boolean;
+    use_count?: number;
+    created_at?: string;
+    updated_at?: string;
+}
+
+export interface TemplateVariable {
+    key: string;
+    label: string;
+    hint: string;
+}
+
 export type ReminderTypeValue = 'manual' | 'auto_day_1' | 'auto_day_3' | 'auto_day_7';
 export type ReminderTab = 'today' | 'upcoming' | 'overdue' | 'completed';
 

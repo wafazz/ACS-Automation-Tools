@@ -54,4 +54,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(Reminder::class);
     }
+
+    public function templates(): HasMany
+    {
+        return $this->hasMany(Template::class);
+    }
 }

@@ -1,8 +1,9 @@
 import AdminLTELayout from '@/Layouts/AdminLTELayout';
 import StatusBadge from '@/Components/Leads/StatusBadge';
 import { useConfirm } from '@/Hooks/useConfirm';
-import { Lead, LeadStatusValue, StatusOption } from '@/types';
-import { Link, router, useForm } from '@inertiajs/react';
+import { Lead, LeadStatusValue, PageProps, StatusOption, Template } from '@/types';
+import { renderTemplate, waLink } from '@/utils/whatsapp';
+import { Link, router, useForm, usePage } from '@inertiajs/react';
 import { FormEventHandler, useState } from 'react';
 import Swal from 'sweetalert2';
 import toast from 'react-hot-toast';
@@ -10,13 +11,7 @@ import toast from 'react-hot-toast';
 interface Props {
     lead: Lead;
     statuses: StatusOption[];
-}
-
-function formatPhoneForWa(phone: string): string {
-    const digits = phone.replace(/\D/g, '');
-    if (digits.startsWith('60')) return digits;
-    if (digits.startsWith('0')) return '60' + digits.slice(1);
-    return digits;
+    templates: Template[];
 }
 
 function formatDateTime(iso: string): string {
@@ -29,11 +24,36 @@ function formatDateTime(iso: string): string {
     });
 }
 
-export default function Show({ lead, statuses }: Props) {
+export default function Show({ lead, statuses, templates }: Props) {
+    const { auth } = usePage<PageProps>().props;
+    const agent = auth.user!;
     const ask = useConfirm();
     const [busy, setBusy] = useState(false);
 
     const noteForm = useForm({ note: '' });
+
+    const sendTemplate = (template: Template) => {
+        const message = renderTemplate(template.body, lead, agent);
+        window.open(waLink(lead.phone, message), '_blank', 'noopener');
+    };
+
+    const copyTemplate = async (template: Template) => {
+        const message = renderTemplate(template.body, lead, agent);
+        try {
+            await navigator.clipboard.writeText(message);
+            toast.success(`Copied "${template.title}" to clipboard.`);
+        } catch {
+            // Fallback: SweetAlert with the text in a textarea
+            await Swal.fire({
+                title: template.title,
+                input: 'textarea',
+                inputValue: message,
+                showCancelButton: false,
+                confirmButtonText: 'Done',
+                confirmButtonColor: '#0d6efd',
+            });
+        }
+    };
 
     const handleStatusChange = async (newStatus: LeadStatusValue) => {
         if (newStatus === lead.status) return;
@@ -97,7 +117,7 @@ export default function Show({ lead, statuses }: Props) {
         });
     };
 
-    const waLink = `https://wa.me/${formatPhoneForWa(lead.phone)}`;
+    const waBlankLink = waLink(lead.phone, '');
 
     return (
         <AdminLTELayout
@@ -111,23 +131,82 @@ export default function Show({ lead, statuses }: Props) {
                 </small>
             }
             pageActions={
-                <div className="btn-group">
-                    <a
-                        href={waLink}
-                        target="_blank"
-                        rel="noopener"
-                        className="btn btn-success"
-                    >
-                        <i className="bi bi-whatsapp me-1" />
-                        WhatsApp
-                    </a>
-                    <Link href={route('leads.edit', lead.id)} className="btn btn-outline-primary">
-                        <i className="bi bi-pencil me-1" />
-                        Edit
-                    </Link>
-                    <button type="button" onClick={handleDelete} className="btn btn-outline-danger">
-                        <i className="bi bi-trash" />
-                    </button>
+                <div className="d-flex gap-2 flex-wrap">
+                    <div className="btn-group">
+                        <a
+                            href={waBlankLink}
+                            target="_blank"
+                            rel="noopener"
+                            className="btn btn-success"
+                            title="Open WhatsApp chat (no message)"
+                        >
+                            <i className="bi bi-whatsapp me-1" />
+                            WhatsApp
+                        </a>
+                        <button
+                            type="button"
+                            className="btn btn-success dropdown-toggle dropdown-toggle-split"
+                            data-bs-toggle="dropdown"
+                            aria-expanded="false"
+                        >
+                            <span className="visually-hidden">Send template</span>
+                        </button>
+                        <ul className="dropdown-menu dropdown-menu-end" style={{ minWidth: 280 }}>
+                            <li>
+                                <h6 className="dropdown-header">
+                                    <i className="bi bi-chat-square-text me-1" />
+                                    Send a template
+                                </h6>
+                            </li>
+                            {templates.length === 0 ? (
+                                <li>
+                                    <span className="dropdown-item-text small text-muted">
+                                        No templates yet.{' '}
+                                        <Link href={route('templates.create')} className="text-decoration-none">
+                                            Create one
+                                        </Link>
+                                    </span>
+                                </li>
+                            ) : (
+                                templates.map((tpl) => (
+                                    <li key={tpl.id} className="d-flex align-items-center px-2 gap-1">
+                                        <button
+                                            type="button"
+                                            className="dropdown-item flex-grow-1 small"
+                                            onClick={() => sendTemplate(tpl)}
+                                        >
+                                            <i className="bi bi-whatsapp text-success me-2" />
+                                            {tpl.title}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className="btn btn-sm btn-link text-muted p-1"
+                                            onClick={() => copyTemplate(tpl)}
+                                            title="Copy to clipboard"
+                                        >
+                                            <i className="bi bi-clipboard" />
+                                        </button>
+                                    </li>
+                                ))
+                            )}
+                            <li><hr className="dropdown-divider" /></li>
+                            <li>
+                                <Link href={route('templates.index')} className="dropdown-item small text-muted">
+                                    <i className="bi bi-gear me-2" />
+                                    Manage templates
+                                </Link>
+                            </li>
+                        </ul>
+                    </div>
+                    <div className="btn-group">
+                        <Link href={route('leads.edit', lead.id)} className="btn btn-outline-primary">
+                            <i className="bi bi-pencil me-1" />
+                            Edit
+                        </Link>
+                        <button type="button" onClick={handleDelete} className="btn btn-outline-danger">
+                            <i className="bi bi-trash" />
+                        </button>
+                    </div>
                 </div>
             }
         >

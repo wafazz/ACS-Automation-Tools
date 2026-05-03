@@ -6,6 +6,7 @@ use App\Enums\ReminderType;
 use App\Models\Lead;
 use App\Models\Reminder;
 use App\Models\User;
+use App\Services\DefaultTemplateSeeder;
 use Illuminate\Support\Carbon;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -24,6 +25,8 @@ class DatabaseSeeder extends Seeder
             'plan' => 'trial',
             'trial_ends_at' => now()->addDays(7),
         ]);
+
+        DefaultTemplateSeeder::seedFor($user);
 
         $leads = Lead::factory()->count(25)->forUser($user)->create();
 

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Enums\Industry;
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\DefaultTemplateSeeder;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -47,6 +48,8 @@ class RegisteredUserController extends Controller
             'plan' => 'trial',
             'trial_ends_at' => now()->addDays(7),
         ]);
+
+        DefaultTemplateSeeder::seedFor($user);
 
         event(new Registered($user));
 
