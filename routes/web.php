@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\UsersController as AdminUsersController;
 use App\Http\Controllers\AffiliateController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\BillingController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReferralController;
@@ -28,48 +29,9 @@ Route::get('/', function () {
     ]);
 });
 
-Route::get('/dashboard', function () {
-    $user = auth()->user();
-    $startOfMonth = now()->startOfMonth();
-
-    $leads = $user->leads();
-    $totalLeads = (clone $leads)->count();
-    $newThisMonth = (clone $leads)->where('created_at', '>=', $startOfMonth)->count();
-    $closedThisMonth = (clone $leads)
-        ->where('status', 'closed')
-        ->where('updated_at', '>=', $startOfMonth)
-        ->count();
-    $conversionRate = $totalLeads > 0
-        ? round(((clone $leads)->where('status', 'closed')->count() / $totalLeads) * 100)
-        : 0;
-
-    $recentLeads = (clone $leads)
-        ->latest()
-        ->limit(5)
-        ->get(['id', 'name', 'phone', 'status', 'created_at']);
-
-    $todayReminders = $user->reminders()
-        ->with('lead:id,name,phone')
-        ->dueToday()
-        ->orderBy('due_at')
-        ->limit(5)
-        ->get();
-
-    $overdueCount = $user->reminders()->overdue()->count();
-
-    return Inertia::render('Dashboard', [
-        'stats' => [
-            'total_leads' => $totalLeads,
-            'new_this_month' => $newThisMonth,
-            'closed_this_month' => $closedThisMonth,
-            'conversion_rate' => $conversionRate,
-        ],
-        'recentLeads' => $recentLeads,
-        'todayReminders' => $todayReminders,
-        'overdueCount' => $overdueCount,
-        'statuses' => \App\Enums\LeadStatus::options(),
-    ]);
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/dashboard', [DashboardController::class, 'index'])
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
