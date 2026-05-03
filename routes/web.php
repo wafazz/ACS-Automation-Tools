@@ -12,6 +12,7 @@ use App\Http\Controllers\BillingController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Settings\AutomationController as UserAutomationController;
 use App\Http\Controllers\Settings\IntegrationsController as UserIntegrationsController;
 use App\Http\Controllers\ReferralController;
 use App\Http\Controllers\ReminderController;
@@ -75,6 +76,10 @@ Route::middleware('auth')->group(function () {
     Route::get('settings/onsend', [UserIntegrationsController::class, 'onsend'])->name('settings.onsend');
     Route::patch('settings/onsend', [UserIntegrationsController::class, 'updateOnsend'])->name('settings.onsend.update');
     Route::post('settings/onsend/test', [UserIntegrationsController::class, 'testOnsend'])->name('settings.onsend.test');
+
+    // Per-user automation rules (auto-send Day 1/3/7 reminders via Onsend)
+    Route::get('settings/automation', [UserAutomationController::class, 'index'])->name('settings.automation');
+    Route::patch('settings/automation', [UserAutomationController::class, 'update'])->name('settings.automation.update');
 });
 
 // Admin routes

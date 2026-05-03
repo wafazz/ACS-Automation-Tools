@@ -22,6 +22,7 @@ class Reminder extends Model
         'completed_at',
         'dismissed_at',
         'snooze_count',
+        'auto_sent_at',
         'note',
     ];
 
@@ -32,6 +33,7 @@ class Reminder extends Model
             'due_at' => 'datetime',
             'completed_at' => 'datetime',
             'dismissed_at' => 'datetime',
+            'auto_sent_at' => 'datetime',
         ];
     }
 

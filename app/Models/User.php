@@ -91,6 +91,11 @@ class User extends Authenticatable
         return $this->hasOne(Referral::class, 'referred_user_id');
     }
 
+    public function automation(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(UserAutomation::class);
+    }
+
     public function activeSubscription(): ?Subscription
     {
         return $this->subscriptions()

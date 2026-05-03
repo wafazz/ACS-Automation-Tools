@@ -112,6 +112,15 @@ export default function Sidebar() {
                                 <p>WhatsApp (Onsend)</p>
                             </Link>
                         </li>
+                        <li className="nav-item">
+                            <Link
+                                href="/settings/automation"
+                                className={`nav-link ${url.startsWith('/settings/automation') ? 'active' : ''}`}
+                            >
+                                <i className="nav-icon bi bi-lightning-charge" />
+                                <p>Automation</p>
+                            </Link>
+                        </li>
 
                         {isAdmin && (
                             <>

@@ -19,3 +19,9 @@ Schedule::command('acs:send-trial-warnings --days=1')
     ->dailyAt('09:30')
     ->timezone('Asia/Kuala_Lumpur')
     ->withoutOverlapping();
+
+// Hourly — auto-send due Day 1/3/7 reminders for opted-in subscribers
+Schedule::command('acs:autosend-reminders')
+    ->hourly()
+    ->timezone('Asia/Kuala_Lumpur')
+    ->withoutOverlapping();
