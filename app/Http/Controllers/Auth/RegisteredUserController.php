@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Auth;
 use App\Enums\Industry;
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\AffiliateService;
 use App\Services\DefaultTemplateSeeder;
 use Illuminate\Auth\Events\Registered;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -50,6 +52,13 @@ class RegisteredUserController extends Controller
         ]);
 
         DefaultTemplateSeeder::seedFor($user);
+
+        // Affiliate attribution: link to referring affiliate if cookie is set
+        $refCode = $request->cookie(AffiliateService::REFERRAL_COOKIE);
+        if (is_string($refCode) && $refCode !== '') {
+            app(AffiliateService::class)->attribute($refCode, $user);
+            Cookie::queue(Cookie::forget(AffiliateService::REFERRAL_COOKIE));
+        }
 
         event(new Registered($user));
 

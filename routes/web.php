@@ -1,9 +1,11 @@
 <?php
 
+use App\Http\Controllers\AffiliateController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ReferralController;
 use App\Http\Controllers\ReminderController;
 use App\Http\Controllers\StoreController;
 use App\Http\Controllers\TemplateController;
@@ -90,7 +92,15 @@ Route::middleware('auth')->group(function () {
     Route::get('store', [StoreController::class, 'index'])->name('store.index');
     Route::get('store/{pack:slug}', [StoreController::class, 'show'])->name('store.show');
     Route::post('store/{pack:slug}/checkout', [StoreController::class, 'checkout'])->name('store.checkout');
+
+    Route::get('affiliate', [AffiliateController::class, 'dashboard'])->name('affiliate.dashboard');
+    Route::post('affiliate/opt-in', [AffiliateController::class, 'optIn'])->name('affiliate.opt-in');
+    Route::get('affiliate/payouts', [AffiliateController::class, 'payouts'])->name('affiliate.payouts');
+    Route::post('affiliate/payouts', [AffiliateController::class, 'requestPayout'])->name('affiliate.payouts.request');
 });
+
+// Public referral landing — sets cookie + redirects to register
+Route::get('r/{code}', [ReferralController::class, 'landing'])->name('referral.landing');
 
 // Public webhook (no auth, no CSRF — exempted in bootstrap/app.php)
 Route::post('billplz/callback', [BillingController::class, 'callback'])->name('billing.callback');

@@ -6,6 +6,7 @@ use App\Enums\Plan;
 use App\Models\Payment;
 use App\Models\Subscription;
 use App\Models\Template;
+use App\Services\AffiliateService;
 use App\Services\BillplzService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -19,8 +20,10 @@ use Throwable;
 
 class BillingController extends Controller
 {
-    public function __construct(private readonly BillplzService $billplz)
-    {
+    public function __construct(
+        private readonly BillplzService $billplz,
+        private readonly AffiliateService $affiliates,
+    ) {
     }
 
     public function pricing(): InertiaResponse
@@ -217,6 +220,9 @@ class BillingController extends Controller
             'plan' => $planEnum->value,
             'trial_ends_at' => null,
         ]);
+
+        // Award affiliate commission (if this user was referred)
+        $this->affiliates->awardCommissionFor($payment);
     }
 
     /**

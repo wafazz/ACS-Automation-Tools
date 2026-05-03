@@ -79,6 +79,16 @@ class User extends Authenticatable
             ->withTimestamps();
     }
 
+    public function affiliate(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(Affiliate::class);
+    }
+
+    public function referral(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(Referral::class, 'referred_user_id');
+    }
+
     public function activeSubscription(): ?Subscription
     {
         return $this->subscriptions()

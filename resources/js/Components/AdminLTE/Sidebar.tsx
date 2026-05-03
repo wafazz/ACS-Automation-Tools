@@ -14,6 +14,7 @@ const NAV_ITEMS: SidebarItem[] = [
     { label: 'Reminders', icon: 'bi-bell', href: '/reminders', routeMatch: 'reminders', badgeKey: 'reminders_open' },
     { label: 'Templates', icon: 'bi-chat-square-text', href: '/templates', routeMatch: 'templates' },
     { label: 'Pack Store', icon: 'bi-bag-heart', href: '/store', routeMatch: 'store' },
+    { label: 'Affiliate', icon: 'bi-share', href: '/affiliate', routeMatch: 'affiliate' },
     { label: 'Analytics', icon: 'bi-graph-up', href: '/analytics', routeMatch: 'analytics' },
 ];
 
