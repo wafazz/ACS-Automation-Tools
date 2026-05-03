@@ -94,6 +94,24 @@ export default function Sidebar() {
                                 <p>Profile</p>
                             </Link>
                         </li>
+                        <li className="nav-item">
+                            <Link
+                                href="/settings/brevo"
+                                className={`nav-link ${url.startsWith('/settings/brevo') ? 'active' : ''}`}
+                            >
+                                <i className="nav-icon bi bi-envelope-at" />
+                                <p>Email (Brevo)</p>
+                            </Link>
+                        </li>
+                        <li className="nav-item">
+                            <Link
+                                href="/settings/onsend"
+                                className={`nav-link ${url.startsWith('/settings/onsend') ? 'active' : ''}`}
+                            >
+                                <i className="nav-icon bi bi-whatsapp" />
+                                <p>WhatsApp (Onsend)</p>
+                            </Link>
+                        </li>
 
                         {isAdmin && (
                             <>

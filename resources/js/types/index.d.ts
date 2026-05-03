@@ -126,10 +126,16 @@ export interface BillingInfo {
     sub_ends_at: string | null;
 }
 
+export interface IntegrationsInfo {
+    has_brevo: boolean;
+    has_onsend: boolean;
+}
+
 export type PageProps<T = Record<string, unknown>> = T & {
     auth: {
         user: User | null;
         billing: BillingInfo | null;
+        integrations: IntegrationsInfo | null;
     };
     flash: {
         success?: string;

@@ -12,13 +12,26 @@ class BrevoService
     private string $senderEmail;
     private string $senderName;
 
-    public function __construct(SettingService $settings)
+    /**
+     * Construct from settings, optionally scoped to a user. When $userId is set,
+     * the user's own row is preferred (with global as fallback). When null, only
+     * the global row is used (suitable for platform-level emails like receipts).
+     */
+    public function __construct(SettingService $settings, ?int $userId = null)
     {
-        $db = $settings->get('brevo');
+        $db = $settings->get('brevo', $userId);
 
         $this->apiKey = trim((string) ($db['api_key'] ?? ''));
         $this->senderEmail = trim((string) ($db['sender_email'] ?? ''));
         $this->senderName = trim((string) ($db['sender_name'] ?? 'ACS'));
+    }
+
+    /**
+     * Convenience factory — `BrevoService::for($user->id)->sendEmail(...)`
+     */
+    public static function for(?int $userId = null): self
+    {
+        return new self(app(SettingService::class), $userId);
     }
 
     public function isConfigured(): bool

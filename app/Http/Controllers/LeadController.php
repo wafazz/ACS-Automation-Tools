@@ -7,6 +7,10 @@ use App\Enums\ReminderType;
 use App\Http\Requests\StoreLeadRequest;
 use App\Http\Requests\UpdateLeadRequest;
 use App\Models\Lead;
+use App\Models\Template;
+use App\Services\OnsendService;
+use App\Services\WhatsAppService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -14,6 +18,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
+use Throwable;
 
 class LeadController extends Controller
 {
@@ -194,5 +199,61 @@ class LeadController extends Controller
         $lead->update(['last_contacted_at' => now()]);
 
         return back()->with('success', 'Note added.');
+    }
+
+    /**
+     * Send a rendered template to the lead via the subscriber's Onsend WhatsApp.
+     * Returns JSON {ok, message, channel: 'onsend'|'wa_link', wa_link?}.
+     *
+     * If Onsend is not configured for the user, returns wa_link so the frontend
+     * can fall back to opening wa.me — no error, just a different channel.
+     */
+    public function sendTemplate(Lead $lead, Template $template): JsonResponse
+    {
+        $this->authorize('view', $lead);
+        $this->authorize('view', $template);
+
+        $user = Auth::user();
+        $whatsapp = app(WhatsAppService::class);
+        $rendered = $whatsapp->render($template->body, $lead, $user);
+
+        $onsend = OnsendService::for($user->id);
+
+        if (! $onsend->isConfigured()) {
+            // Graceful fallback — frontend opens wa.me in a new tab
+            return response()->json([
+                'ok' => true,
+                'channel' => 'wa_link',
+                'wa_link' => $whatsapp->waLink($lead->phone, $rendered),
+                'message' => 'Onsend not configured — opening WhatsApp Web instead.',
+            ]);
+        }
+
+        try {
+            $onsend->sendMessage($lead->phone, $rendered);
+
+            // Log as a note in the lead's activity timeline + bump last_contacted_at
+            $lead->statusHistory()->create([
+                'changed_by' => $user->id,
+                'from_status' => $lead->status->value,
+                'to_status' => $lead->status->value,
+                'note' => "Sent via Onsend: {$template->title}",
+            ]);
+            $lead->update(['last_contacted_at' => now()]);
+            $template->increment('use_count');
+
+            return response()->json([
+                'ok' => true,
+                'channel' => 'onsend',
+                'message' => "Sent “{$template->title}” to {$lead->name}.",
+            ]);
+        } catch (Throwable $e) {
+            return response()->json([
+                'ok' => false,
+                'channel' => 'onsend',
+                'message' => 'Onsend send failed: ' . $e->getMessage(),
+                'wa_link' => $whatsapp->waLink($lead->phone, $rendered),
+            ], 500);
+        }
     }
 }

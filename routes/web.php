@@ -12,6 +12,7 @@ use App\Http\Controllers\BillingController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Settings\IntegrationsController as UserIntegrationsController;
 use App\Http\Controllers\ReferralController;
 use App\Http\Controllers\ReminderController;
 use App\Http\Controllers\StoreController;
@@ -41,6 +42,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('leads', LeadController::class);
     Route::patch('leads/{lead}/status', [LeadController::class, 'updateStatus'])->name('leads.status');
     Route::post('leads/{lead}/notes', [LeadController::class, 'addNote'])->name('leads.notes');
+    Route::post('leads/{lead}/send/{template}', [LeadController::class, 'sendTemplate'])->name('leads.send');
 
     Route::get('reminders', [ReminderController::class, 'index'])->name('reminders.index');
     Route::post('reminders', [ReminderController::class, 'store'])->name('reminders.store');
@@ -65,6 +67,14 @@ Route::middleware('auth')->group(function () {
     Route::post('affiliate/opt-in', [AffiliateController::class, 'optIn'])->name('affiliate.opt-in');
     Route::get('affiliate/payouts', [AffiliateController::class, 'payouts'])->name('affiliate.payouts');
     Route::post('affiliate/payouts', [AffiliateController::class, 'requestPayout'])->name('affiliate.payouts.request');
+
+    // Subscriber-facing integration settings (per-user Brevo + Onsend)
+    Route::get('settings/brevo', [UserIntegrationsController::class, 'brevo'])->name('settings.brevo');
+    Route::patch('settings/brevo', [UserIntegrationsController::class, 'updateBrevo'])->name('settings.brevo.update');
+    Route::post('settings/brevo/test', [UserIntegrationsController::class, 'testBrevo'])->name('settings.brevo.test');
+    Route::get('settings/onsend', [UserIntegrationsController::class, 'onsend'])->name('settings.onsend');
+    Route::patch('settings/onsend', [UserIntegrationsController::class, 'updateOnsend'])->name('settings.onsend.update');
+    Route::post('settings/onsend/test', [UserIntegrationsController::class, 'testOnsend'])->name('settings.onsend.test');
 });
 
 // Admin routes

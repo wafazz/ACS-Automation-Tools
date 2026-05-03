@@ -10,6 +10,7 @@ class ServiceSetting extends Model
 {
     protected $fillable = [
         'service',
+        'user_id',
         'settings',
         'is_enabled',
         'updated_by',

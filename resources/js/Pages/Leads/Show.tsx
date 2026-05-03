@@ -4,6 +4,7 @@ import { useConfirm } from '@/Hooks/useConfirm';
 import { Lead, LeadStatusValue, PageProps, StatusOption, Template } from '@/types';
 import { renderTemplate, waLink } from '@/utils/whatsapp';
 import { Link, router, useForm, usePage } from '@inertiajs/react';
+import axios from 'axios';
 import { FormEventHandler, useState } from 'react';
 import Swal from 'sweetalert2';
 import toast from 'react-hot-toast';
@@ -27,14 +28,43 @@ function formatDateTime(iso: string): string {
 export default function Show({ lead, statuses, templates }: Props) {
     const { auth } = usePage<PageProps>().props;
     const agent = auth.user!;
+    const hasOnsend = !!auth.integrations?.has_onsend;
     const ask = useConfirm();
     const [busy, setBusy] = useState(false);
 
     const noteForm = useForm({ note: '' });
 
-    const sendTemplate = (template: Template) => {
-        const message = renderTemplate(template.body, lead, agent);
-        window.open(waLink(lead.phone, message), '_blank', 'noopener');
+    /**
+     * Smart send:
+     *   - If user has Onsend configured: server sends programmatically + logs note + bumps last_contacted_at
+     *   - Otherwise: opens wa.me in a new tab (legacy behavior)
+     */
+    const sendTemplate = async (template: Template) => {
+        if (!hasOnsend) {
+            const message = renderTemplate(template.body, lead, agent);
+            window.open(waLink(lead.phone, message), '_blank', 'noopener');
+            return;
+        }
+
+        try {
+            const { data } = await axios.post(route('leads.send', [lead.id, template.id]));
+            if (data.ok && data.channel === 'onsend') {
+                toast.success(data.message);
+                router.reload({ only: ['lead'] }); // refresh activity timeline
+            } else if (data.wa_link) {
+                // Server returned a fallback link (e.g. config got disabled mid-session)
+                toast(data.message, { icon: 'ℹ️' });
+                window.open(data.wa_link, '_blank', 'noopener');
+            }
+        } catch (e: any) {
+            const errData = e?.response?.data;
+            if (errData?.wa_link) {
+                toast.error(errData.message ?? 'Send failed — opening WhatsApp Web.');
+                window.open(errData.wa_link, '_blank', 'noopener');
+            } else {
+                toast.error('Send failed.');
+            }
+        }
     };
 
     const copyTemplate = async (template: Template) => {
@@ -151,11 +181,23 @@ export default function Show({ lead, statuses, templates }: Props) {
                         >
                             <span className="visually-hidden">Send template</span>
                         </button>
-                        <ul className="dropdown-menu dropdown-menu-end" style={{ minWidth: 280 }}>
+                        <ul className="dropdown-menu dropdown-menu-end" style={{ minWidth: 300 }}>
                             <li>
-                                <h6 className="dropdown-header">
-                                    <i className="bi bi-chat-square-text me-1" />
-                                    Send a template
+                                <h6 className="dropdown-header d-flex justify-content-between align-items-center">
+                                    <span>
+                                        <i className="bi bi-chat-square-text me-1" />
+                                        Send a template
+                                    </span>
+                                    {hasOnsend ? (
+                                        <span className="badge bg-success-subtle text-success small" title="Sends programmatically via your Onsend">
+                                            <i className="bi bi-lightning-fill me-1" />
+                                            Auto
+                                        </span>
+                                    ) : (
+                                        <Link href="/settings/onsend" className="badge bg-secondary-subtle text-secondary small text-decoration-none" title="Set up Onsend to send programmatically">
+                                            wa.me
+                                        </Link>
+                                    )}
                                 </h6>
                             </li>
                             {templates.length === 0 ? (

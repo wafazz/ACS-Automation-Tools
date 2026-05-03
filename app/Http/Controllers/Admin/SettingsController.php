@@ -67,7 +67,8 @@ class SettingsController extends Controller
             'sandbox' => $validated['sandbox'],
         ];
 
-        $this->settings->set('billplz', $next, $validated['is_enabled'], Auth::id());
+        // Admin scope = global (user_id null); pass admin id as updated_by
+        $this->settings->set('billplz', $next, $validated['is_enabled'], null, Auth::id());
 
         return back()->with('success', 'Billplz settings saved.');
     }
@@ -140,7 +141,7 @@ class SettingsController extends Controller
             'sender_name' => $validated['sender_name'],
         ];
 
-        $this->settings->set('brevo', $next, $validated['is_enabled'], Auth::id());
+        $this->settings->set('brevo', $next, $validated['is_enabled'], null, Auth::id());
 
         return back()->with('success', 'Brevo settings saved.');
     }
@@ -200,7 +201,7 @@ class SettingsController extends Controller
                 : ($current['access_token'] ?? ''),
         ];
 
-        $this->settings->set('onsend', $next, $validated['is_enabled'], Auth::id());
+        $this->settings->set('onsend', $next, $validated['is_enabled'], null, Auth::id());
 
         return back()->with('success', 'Onsend settings saved.');
     }

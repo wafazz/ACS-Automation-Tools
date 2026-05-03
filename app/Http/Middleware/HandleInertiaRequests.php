@@ -59,6 +59,10 @@ class HandleInertiaRequests extends Middleware
                         : null,
                     'sub_ends_at' => $sub?->ends_at,
                 ] : null,
+                'integrations' => $user ? fn () => [
+                    'has_brevo' => app(\App\Services\SettingService::class)->isEnabled('brevo', $user->id),
+                    'has_onsend' => app(\App\Services\SettingService::class)->isEnabled('onsend', $user->id),
+                ] : null,
             ],
             'sidebarCounts' => $user ? fn () => [
                 'reminders_open' => $user->reminders()

@@ -11,12 +11,20 @@ class OnsendService
     private string $instanceId;
     private string $accessToken;
 
-    public function __construct(SettingService $settings)
+    public function __construct(SettingService $settings, ?int $userId = null)
     {
-        $db = $settings->get('onsend');
+        $db = $settings->get('onsend', $userId);
 
         $this->instanceId = trim((string) ($db['instance_id'] ?? ''));
         $this->accessToken = trim((string) ($db['access_token'] ?? ''));
+    }
+
+    /**
+     * Convenience factory — `OnsendService::for($user->id)->sendMessage(...)`
+     */
+    public static function for(?int $userId = null): self
+    {
+        return new self(app(SettingService::class), $userId);
     }
 
     public function isConfigured(): bool
