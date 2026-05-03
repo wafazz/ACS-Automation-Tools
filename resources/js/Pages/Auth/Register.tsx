@@ -1,13 +1,16 @@
 import GuestLayout from '@/Layouts/GuestLayout';
 import LoadingButton from '@/Components/UX/LoadingButton';
+import { IndustryOption } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
 import toast from 'react-hot-toast';
 
-export default function Register() {
+export default function Register({ industries }: { industries: IndustryOption[] }) {
     const { data, setData, post, processing, errors, reset } = useForm({
         name: '',
         email: '',
+        phone: '',
+        industry: '',
         password: '',
         password_confirmation: '',
     });
@@ -25,7 +28,7 @@ export default function Register() {
             <Head title="Register" />
 
             <h2 className="h4 fw-bold mb-1">Create your account</h2>
-            <p className="text-muted mb-4">Start closing more deals in minutes.</p>
+            <p className="text-muted mb-4">Start closing more deals in minutes — 7-day free trial, no card needed.</p>
 
             <form onSubmit={submit}>
                 <div className="mb-3">
@@ -55,6 +58,39 @@ export default function Register() {
                         required
                     />
                     {errors.email && <div className="invalid-feedback">{errors.email}</div>}
+                </div>
+
+                <div className="row g-3 mb-3">
+                    <div className="col-12 col-sm-6">
+                        <label htmlFor="phone" className="form-label fw-medium">Phone (WhatsApp)</label>
+                        <input
+                            id="phone"
+                            type="tel"
+                            className={`form-control ${errors.phone ? 'is-invalid' : ''}`}
+                            value={data.phone}
+                            placeholder="0123456789"
+                            autoComplete="tel"
+                            onChange={(e) => setData('phone', e.target.value)}
+                            required
+                        />
+                        {errors.phone && <div className="invalid-feedback">{errors.phone}</div>}
+                    </div>
+                    <div className="col-12 col-sm-6">
+                        <label htmlFor="industry" className="form-label fw-medium">Industry</label>
+                        <select
+                            id="industry"
+                            className={`form-select ${errors.industry ? 'is-invalid' : ''}`}
+                            value={data.industry}
+                            onChange={(e) => setData('industry', e.target.value)}
+                            required
+                        >
+                            <option value="">Select industry</option>
+                            {industries.map((opt) => (
+                                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                            ))}
+                        </select>
+                        {errors.industry && <div className="invalid-feedback">{errors.industry}</div>}
+                    </div>
                 </div>
 
                 <div className="mb-3">

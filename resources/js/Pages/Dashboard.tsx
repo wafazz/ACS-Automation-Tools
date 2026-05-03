@@ -18,11 +18,12 @@ const KPIS: KpiCard[] = [
 
 export default function Dashboard() {
     const { auth } = usePage<PageProps>().props;
+    const user = auth.user!;
 
     return (
         <AdminLTELayout
             title="Dashboard"
-            pageTitle={`Welcome back, ${auth.user.name.split(' ')[0]}`}
+            pageTitle={`Welcome back, ${user.name.split(' ')[0]}`}
         >
             <div className="row g-3 mb-4">
                 {KPIS.map((kpi) => (

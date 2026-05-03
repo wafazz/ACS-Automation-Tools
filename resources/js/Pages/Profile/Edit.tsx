@@ -1,6 +1,5 @@
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { PageProps } from '@/types';
-import { Head } from '@inertiajs/react';
+import AdminLTELayout from '@/Layouts/AdminLTELayout';
+import { IndustryOption, PageProps } from '@/types';
 import DeleteUserForm from './Partials/DeleteUserForm';
 import UpdatePasswordForm from './Partials/UpdatePasswordForm';
 import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm';
@@ -8,36 +7,69 @@ import UpdateProfileInformationForm from './Partials/UpdateProfileInformationFor
 export default function Edit({
     mustVerifyEmail,
     status,
-}: PageProps<{ mustVerifyEmail: boolean; status?: string }>) {
+    industries,
+}: PageProps<{
+    mustVerifyEmail: boolean;
+    status?: string;
+    industries: IndustryOption[];
+}>) {
     return (
-        <AuthenticatedLayout
-            header={
-                <h2 className="text-xl font-semibold leading-tight text-gray-800">
-                    Profile
-                </h2>
-            }
-        >
-            <Head title="Profile" />
-
-            <div className="py-12">
-                <div className="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
-                    <div className="bg-white p-4 shadow sm:rounded-lg sm:p-8">
-                        <UpdateProfileInformationForm
-                            mustVerifyEmail={mustVerifyEmail}
-                            status={status}
-                            className="max-w-xl"
-                        />
+        <AdminLTELayout title="Profile" pageTitle="Profile Settings">
+            <div className="row g-4">
+                <div className="col-12 col-lg-8">
+                    <div className="card border-0 shadow-sm">
+                        <div className="card-body p-4">
+                            <UpdateProfileInformationForm
+                                mustVerifyEmail={mustVerifyEmail}
+                                status={status}
+                                industries={industries}
+                            />
+                        </div>
                     </div>
+                </div>
 
-                    <div className="bg-white p-4 shadow sm:rounded-lg sm:p-8">
-                        <UpdatePasswordForm className="max-w-xl" />
+                <div className="col-12 col-lg-4">
+                    <div className="card border-0 shadow-sm h-100">
+                        <div className="card-body p-4">
+                            <h5 className="fw-semibold mb-3">
+                                <i className="bi bi-info-circle me-2 text-primary" />
+                                Account Status
+                            </h5>
+                            <AccountStatusCard />
+                        </div>
                     </div>
+                </div>
 
-                    <div className="bg-white p-4 shadow sm:rounded-lg sm:p-8">
-                        <DeleteUserForm className="max-w-xl" />
+                <div className="col-12">
+                    <div className="card border-0 shadow-sm">
+                        <div className="card-body p-4">
+                            <UpdatePasswordForm />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="col-12">
+                    <div className="card border-0 shadow-sm border-start border-danger border-3">
+                        <div className="card-body p-4">
+                            <DeleteUserForm />
+                        </div>
                     </div>
                 </div>
             </div>
-        </AuthenticatedLayout>
+        </AdminLTELayout>
+    );
+}
+
+function AccountStatusCard() {
+    return (
+        <div>
+            <p className="text-muted small mb-2">
+                Manage your subscription, view trial status, and access invoices.
+            </p>
+            <a href="#" className="btn btn-outline-primary btn-sm w-100">
+                <i className="bi bi-credit-card me-1" />
+                Manage Plan
+            </a>
+        </div>
     );
 }

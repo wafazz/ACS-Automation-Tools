@@ -21,11 +21,20 @@ class RegistrationTest extends TestCase
         $response = $this->post('/register', [
             'name' => 'Test User',
             'email' => 'test@example.com',
+            'phone' => '0123456789',
+            'industry' => 'takaful',
             'password' => 'password',
             'password_confirmation' => 'password',
         ]);
 
         $this->assertAuthenticated();
         $response->assertRedirect(route('dashboard', absolute: false));
+
+        $user = \App\Models\User::where('email', 'test@example.com')->first();
+        $this->assertSame('0123456789', $user->phone);
+        $this->assertSame('takaful', $user->industry?->value);
+        $this->assertSame('trial', $user->plan);
+        $this->assertNotNull($user->trial_ends_at);
+        $this->assertTrue($user->trial_ends_at->isFuture());
     }
 }

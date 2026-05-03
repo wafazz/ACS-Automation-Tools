@@ -5,6 +5,7 @@ import { PageProps } from '@/types';
 
 export default function Topbar() {
     const { auth } = usePage<PageProps>().props;
+    const user = auth.user!;
     const ask = useConfirm();
 
     const handleLogout = async (e: React.MouseEvent) => {
@@ -65,7 +66,7 @@ export default function Topbar() {
                             data-bs-toggle="dropdown"
                         >
                             <i className="bi bi-person-circle me-1" style={{ fontSize: '1.4rem' }} />
-                            <span className="d-none d-md-inline">{auth.user.name}</span>
+                            <span className="d-none d-md-inline">{user.name}</span>
                         </a>
                         <ul className="dropdown-menu dropdown-menu-end">
                             <li>
