@@ -26,24 +26,28 @@ class AutomationController extends Controller
 
         $onsendConfigured = OnsendService::for($user->id)->isConfigured();
 
+        // Build slot data for the UI — falls back to defaults if user hasn't
+        // configured yet, so the form shows sensible starting values.
+        $slots = [];
+        foreach (ReminderType::autoTypes() as $type) {
+            $slot = $automation ? $automation->slot($type) : UserAutomation::defaultSlot($type);
+            $slots[] = [
+                'key' => $type->value,
+                'label' => $type->label(),
+                'enabled' => $slot['enabled'],
+                'delay_days' => $slot['delay_days'],
+                'hour' => $slot['hour'],
+                'minute' => $slot['minute'],
+                'template_id' => $slot['template_id'],
+            ];
+        }
+
         return Inertia::render('Settings/Automation', [
             'automation' => [
                 'autosend_enabled' => (bool) ($automation?->autosend_enabled),
-                'template_map' => $automation?->template_map ?? [
-                    'auto_day_1' => null,
-                    'auto_day_3' => null,
-                    'auto_day_7' => null,
-                ],
             ],
+            'slots' => $slots,
             'templates' => $templates,
-            'reminderTypes' => array_map(
-                fn (ReminderType $t) => [
-                    'value' => $t->value,
-                    'label' => $t->label(),
-                    'days' => $t->defaultDelayDays(),
-                ],
-                ReminderType::autoTypes(),
-            ),
             'onsendConfigured' => $onsendConfigured,
         ]);
     }
@@ -54,27 +58,44 @@ class AutomationController extends Controller
 
         $validated = $request->validate([
             'autosend_enabled' => ['required', 'boolean'],
-            'template_map' => ['array'],
-            'template_map.auto_day_1' => ['nullable', 'integer'],
-            'template_map.auto_day_3' => ['nullable', 'integer'],
-            'template_map.auto_day_7' => ['nullable', 'integer'],
+            'slots' => ['required', 'array', 'size:3'],
+            'slots.*.key' => ['required', 'string'],
+            'slots.*.enabled' => ['required', 'boolean'],
+            'slots.*.delay_days' => ['required', 'integer', 'min:0', 'max:365'],
+            'slots.*.hour' => ['required', 'integer', 'min:0', 'max:23'],
+            'slots.*.minute' => ['required', 'integer', 'min:0', 'max:59'],
+            'slots.*.template_id' => ['nullable', 'integer'],
         ]);
 
-        // Validate that any provided template_id belongs to THIS user
         $userTemplateIds = $user->templates()->pluck('id')->toArray();
-        $cleanMap = [];
-        foreach (['auto_day_1', 'auto_day_3', 'auto_day_7'] as $key) {
-            $value = $validated['template_map'][$key] ?? null;
-            $cleanMap[$key] = ($value !== null && \in_array((int) $value, $userTemplateIds, true))
-                ? (int) $value
-                : null;
+        $autoTypeValues = array_map(fn (ReminderType $t) => $t->value, ReminderType::autoTypes());
+
+        $schedule = [];
+        foreach ($validated['slots'] as $slot) {
+            // Only accept known slot keys (auto_day_1/3/7) — silently drop unknowns
+            if (! \in_array($slot['key'], $autoTypeValues, true)) {
+                continue;
+            }
+
+            $templateId = $slot['template_id'] ?? null;
+            if ($templateId !== null && ! \in_array((int) $templateId, $userTemplateIds, true)) {
+                $templateId = null; // Cross-user template references silently dropped
+            }
+
+            $schedule[$slot['key']] = [
+                'enabled' => (bool) $slot['enabled'],
+                'delay_days' => (int) $slot['delay_days'],
+                'hour' => (int) $slot['hour'],
+                'minute' => (int) $slot['minute'],
+                'template_id' => $templateId === null ? null : (int) $templateId,
+            ];
         }
 
         UserAutomation::updateOrCreate(
             ['user_id' => $user->id],
             [
                 'autosend_enabled' => $validated['autosend_enabled'],
-                'template_map' => $cleanMap,
+                'schedule' => $schedule,
             ],
         );
 

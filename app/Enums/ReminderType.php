@@ -13,9 +13,9 @@ enum ReminderType: string
     {
         return match ($this) {
             self::Manual => 'Manual',
-            self::AutoDay1 => 'Day 1 follow-up',
-            self::AutoDay3 => 'Day 3 follow-up',
-            self::AutoDay7 => 'Day 7 follow-up',
+            self::AutoDay1 => '1st Follow-up',
+            self::AutoDay3 => '2nd Follow-up',
+            self::AutoDay7 => '3rd Follow-up',
         };
     }
 

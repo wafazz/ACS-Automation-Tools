@@ -2,37 +2,64 @@ import AdminLTELayout from '@/Layouts/AdminLTELayout';
 import LoadingButton from '@/Components/UX/LoadingButton';
 import { PageProps } from '@/types';
 import { Link, useForm, usePage } from '@inertiajs/react';
-import { FormEventHandler } from 'react';
+import { FormEventHandler, useMemo } from 'react';
 import toast from 'react-hot-toast';
 
-interface ReminderTypeOption {
-    value: 'auto_day_1' | 'auto_day_3' | 'auto_day_7';
+interface SlotData {
+    key: 'auto_day_1' | 'auto_day_3' | 'auto_day_7';
     label: string;
-    days: number;
+    enabled: boolean;
+    delay_days: number;
+    hour: number;
+    minute: number;
+    template_id: number | null;
 }
 
 interface PageData {
     automation: {
         autosend_enabled: boolean;
-        template_map: Record<string, number | null>;
     };
+    slots: SlotData[];
     templates: Array<{ id: number; title: string; is_default: boolean }>;
-    reminderTypes: ReminderTypeOption[];
     onsendConfigured: boolean;
 }
 
+function pad(n: number): string {
+    return n.toString().padStart(2, '0');
+}
+
+function projectFireTime(now: Date, delayDays: number, hour: number, minute: number): Date {
+    const d = new Date(now);
+    d.setDate(d.getDate() + delayDays);
+    d.setHours(hour, minute, 0, 0);
+    return d;
+}
+
+function formatProjection(d: Date): string {
+    return d.toLocaleString('en-MY', {
+        weekday: 'short',
+        day: '2-digit',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+    });
+}
+
 export default function Automation() {
-    const { automation, templates, reminderTypes, onsendConfigured } =
+    const { automation, slots: initialSlots, templates, onsendConfigured } =
         usePage<PageProps<PageData>>().props;
 
     const form = useForm({
         autosend_enabled: automation.autosend_enabled,
-        template_map: {
-            auto_day_1: automation.template_map.auto_day_1 ?? null,
-            auto_day_3: automation.template_map.auto_day_3 ?? null,
-            auto_day_7: automation.template_map.auto_day_7 ?? null,
-        } as Record<string, number | null>,
+        slots: initialSlots.map((s) => ({ ...s })),
     });
+
+    const updateSlot = (idx: number, patch: Partial<SlotData>) => {
+        form.setData(
+            'slots',
+            form.data.slots.map((s, i) => (i === idx ? { ...s, ...patch } : s)),
+        );
+    };
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
@@ -42,16 +69,14 @@ export default function Automation() {
         });
     };
 
-    const setTemplate = (key: string, value: string) => {
-        form.setData('template_map', {
-            ...form.data.template_map,
-            [key]: value === '' ? null : Number(value),
-        });
-    };
+    // Live projection — shows when reminders would fire if a lead was added right now
+    const now = useMemo(() => new Date(), []);
+    const previews = form.data.slots.map((s) => projectFireTime(now, s.delay_days, s.hour, s.minute));
 
-    const allTypesAssigned = reminderTypes.every((t) => form.data.template_map[t.value] !== null);
-    const someTypesAssigned = reminderTypes.some((t) => form.data.template_map[t.value] !== null);
-    const willActuallyAutosend = form.data.autosend_enabled && onsendConfigured && someTypesAssigned;
+    const someEnabledAndAssigned = form.data.slots.some(
+        (s) => s.enabled && s.template_id !== null,
+    );
+    const willActuallyAutosend = form.data.autosend_enabled && onsendConfigured && someEnabledAndAssigned;
 
     return (
         <AdminLTELayout
@@ -66,14 +91,13 @@ export default function Automation() {
         >
             <div className="row g-3">
                 <div className="col-12 col-lg-8">
-                    {/* Status banner */}
                     {willActuallyAutosend ? (
                         <div className="alert alert-success d-flex align-items-start gap-2 mb-3">
                             <i className="bi bi-check-circle-fill" />
                             <div>
                                 <strong>Autosend is active.</strong>{' '}
                                 The hourly cron will automatically send your assigned templates to leads
-                                whenever a Day 1/3/7 reminder becomes due.
+                                whenever a configured slot becomes due.
                             </div>
                         </div>
                     ) : (
@@ -82,7 +106,7 @@ export default function Automation() {
                             <div>
                                 <strong>Autosend is currently INACTIVE.</strong>
                                 <ul className="small mb-0 mt-1">
-                                    {!form.data.autosend_enabled && <li>Toggle "Enable autosend" below</li>}
+                                    {!form.data.autosend_enabled && <li>Toggle the master switch below</li>}
                                     {!onsendConfigured && (
                                         <li>
                                             <Link href={route('settings.onsend')} className="alert-link">
@@ -90,58 +114,106 @@ export default function Automation() {
                                             </Link>
                                         </li>
                                     )}
-                                    {!someTypesAssigned && <li>Assign at least one template below</li>}
+                                    {!someEnabledAndAssigned && <li>Enable at least one follow-up slot below and assign a template</li>}
                                 </ul>
                             </div>
                         </div>
                     )}
 
-                    <div className="card border-0 shadow-sm">
+                    <div className="card border-0 shadow-sm mb-3">
                         <div className="card-body">
                             <h6 className="fw-semibold mb-3">
                                 <i className="bi bi-lightning-charge me-2 text-primary" />
-                                Auto-send Reminder Templates
+                                Master Switch
                             </h6>
-                            <p className="text-muted small mb-4">
-                                Pick a template for each follow-up day. When the reminder becomes due, ACS
-                                automatically sends the rendered template to the lead via your Onsend account.
-                                Closed leads are never auto-messaged.
-                            </p>
-
-                            <form onSubmit={submit}>
-                                <div className="form-check form-switch mb-4">
-                                    <input
-                                        id="autosend_enabled"
-                                        type="checkbox"
-                                        className="form-check-input"
-                                        checked={form.data.autosend_enabled}
-                                        onChange={(e) => form.setData('autosend_enabled', e.target.checked)}
-                                    />
-                                    <label htmlFor="autosend_enabled" className="form-check-label fw-medium">
-                                        Enable autosend
-                                    </label>
-                                    <div className="form-text">
-                                        Master switch. When off, no reminders are auto-sent regardless of template assignments.
-                                    </div>
+                            <div className="form-check form-switch">
+                                <input
+                                    id="autosend_enabled"
+                                    type="checkbox"
+                                    className="form-check-input"
+                                    checked={form.data.autosend_enabled}
+                                    onChange={(e) => form.setData('autosend_enabled', e.target.checked)}
+                                />
+                                <label htmlFor="autosend_enabled" className="form-check-label fw-medium">
+                                    Enable autosend
+                                </label>
+                                <div className="form-text">
+                                    Master switch. When off, no reminders are auto-sent regardless of per-slot settings.
                                 </div>
+                            </div>
+                        </div>
+                    </div>
 
-                                <div className="mb-4">
-                                    {reminderTypes.map((type) => (
-                                        <div key={type.value} className="mb-3">
-                                            <label htmlFor={type.value} className="form-label fw-medium">
-                                                <i className="bi bi-calendar-check me-2 text-primary" />
-                                                {type.label}
-                                                <span className="text-muted small ms-2">
-                                                    (fires {type.days} day{type.days === 1 ? '' : 's'} after lead added)
-                                                </span>
+                    <form onSubmit={submit}>
+                        {form.data.slots.map((slot, idx) => (
+                            <div key={slot.key} className={`card border-0 shadow-sm mb-3 ${slot.enabled ? '' : 'opacity-75'}`}>
+                                <div className="card-body">
+                                    <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                                        <h6 className="fw-semibold mb-0">
+                                            <i className="bi bi-calendar-check me-2 text-primary" />
+                                            {slot.label}
+                                        </h6>
+                                        <div className="form-check form-switch mb-0">
+                                            <input
+                                                id={`enabled-${slot.key}`}
+                                                type="checkbox"
+                                                className="form-check-input"
+                                                checked={slot.enabled}
+                                                onChange={(e) => updateSlot(idx, { enabled: e.target.checked })}
+                                            />
+                                            <label htmlFor={`enabled-${slot.key}`} className="form-check-label small">
+                                                {slot.enabled ? 'Enabled' : 'Disabled'}
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <div className="row g-3">
+                                        <div className="col-12 col-md-3">
+                                            <label htmlFor={`days-${slot.key}`} className="form-label small fw-medium">
+                                                Send after
+                                            </label>
+                                            <div className="input-group">
+                                                <input
+                                                    id={`days-${slot.key}`}
+                                                    type="number"
+                                                    min={0}
+                                                    max={365}
+                                                    className="form-control"
+                                                    value={slot.delay_days}
+                                                    onChange={(e) => updateSlot(idx, { delay_days: Math.max(0, Math.min(365, Number(e.target.value) || 0)) })}
+                                                    disabled={!slot.enabled}
+                                                />
+                                                <span className="input-group-text">day{slot.delay_days === 1 ? '' : 's'}</span>
+                                            </div>
+                                        </div>
+                                        <div className="col-12 col-md-3">
+                                            <label htmlFor={`time-${slot.key}`} className="form-label small fw-medium">
+                                                At time
+                                            </label>
+                                            <input
+                                                id={`time-${slot.key}`}
+                                                type="time"
+                                                className="form-control"
+                                                value={`${pad(slot.hour)}:${pad(slot.minute)}`}
+                                                onChange={(e) => {
+                                                    const [h, m] = e.target.value.split(':').map(Number);
+                                                    updateSlot(idx, { hour: h ?? 9, minute: m ?? 0 });
+                                                }}
+                                                disabled={!slot.enabled}
+                                            />
+                                        </div>
+                                        <div className="col-12 col-md-6">
+                                            <label htmlFor={`template-${slot.key}`} className="form-label small fw-medium">
+                                                Template
                                             </label>
                                             <select
-                                                id={type.value}
+                                                id={`template-${slot.key}`}
                                                 className="form-select"
-                                                value={form.data.template_map[type.value] ?? ''}
-                                                onChange={(e) => setTemplate(type.value, e.target.value)}
+                                                value={slot.template_id ?? ''}
+                                                onChange={(e) => updateSlot(idx, { template_id: e.target.value === '' ? null : Number(e.target.value) })}
+                                                disabled={!slot.enabled}
                                             >
-                                                <option value="">— No template (manual only) —</option>
+                                                <option value="">— No template —</option>
                                                 {templates.map((tpl) => (
                                                     <option key={tpl.id} value={tpl.id}>
                                                         {tpl.title}{tpl.is_default ? ' (default)' : ''}
@@ -149,75 +221,94 @@ export default function Automation() {
                                                 ))}
                                             </select>
                                         </div>
-                                    ))}
-                                </div>
+                                    </div>
 
-                                <LoadingButton
-                                    type="submit"
-                                    loading={form.processing}
-                                    className="btn btn-primary"
-                                    loadingText="Saving..."
-                                >
-                                    <i className="bi bi-check-lg me-1" />
-                                    Save Automation Settings
-                                </LoadingButton>
-                            </form>
-                        </div>
-                    </div>
+                                    {slot.enabled && (
+                                        <div className="mt-3 small text-muted">
+                                            <i className="bi bi-clock me-1" />
+                                            If a lead is added now, this fires at{' '}
+                                            <strong className="text-body">{formatProjection(previews[idx])}</strong>
+                                            {!slot.template_id && (
+                                                <span className="text-warning ms-2">
+                                                    <i className="bi bi-exclamation-triangle me-1" />
+                                                    no template assigned
+                                                </span>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+
+                        <LoadingButton
+                            type="submit"
+                            loading={form.processing}
+                            className="btn btn-primary"
+                            loadingText="Saving..."
+                        >
+                            <i className="bi bi-check-lg me-1" />
+                            Save Automation Settings
+                        </LoadingButton>
+                    </form>
                 </div>
 
                 <div className="col-12 col-lg-4">
-                    <div className="card border-0 shadow-sm">
+                    <div className="card border-0 shadow-sm sticky-top" style={{ top: 80 }}>
                         <div className="card-body">
                             <h6 className="fw-semibold mb-3">
-                                <i className="bi bi-info-circle me-2 text-primary" />
-                                How it works
+                                <i className="bi bi-eye me-2 text-primary" />
+                                Live Preview
                             </h6>
-                            <ol className="text-muted small ps-3 mb-3">
-                                <li className="mb-2">
-                                    Add a lead. ACS auto-creates 3 reminders (Day 1, 3, 7 at 09:00 MYT).
-                                </li>
-                                <li className="mb-2">
-                                    When each reminder becomes due, an hourly cron checks if you have autosend on +
-                                    a template assigned for that day.
-                                </li>
-                                <li className="mb-2">
-                                    If yes, the rendered template is sent via your Onsend WhatsApp instantly. The
-                                    reminder is marked auto-sent and a note is added to the lead's activity timeline.
-                                </li>
-                                <li>
-                                    If no (autosend off, no template, no Onsend, or lead already closed), the
-                                    reminder stays as a manual to-do as before.
-                                </li>
+                            <p className="text-muted small mb-3">
+                                If you add a lead right now, here's when each follow-up would fire:
+                            </p>
+                            <ol className="list-unstyled mb-3">
+                                {form.data.slots.map((slot, idx) => (
+                                    <li key={slot.key} className="d-flex align-items-start gap-2 mb-2 pb-2 border-bottom">
+                                        <span
+                                            className={`d-inline-flex align-items-center justify-content-center rounded-circle small flex-shrink-0 ${slot.enabled ? 'bg-primary text-white' : 'bg-secondary-subtle text-muted'}`}
+                                            style={{ width: 24, height: 24, fontSize: '0.7rem' }}
+                                        >
+                                            {idx + 1}
+                                        </span>
+                                        <div className="flex-grow-1">
+                                            <div className="small fw-medium">{slot.label}</div>
+                                            {slot.enabled ? (
+                                                <div className="small text-muted">
+                                                    {formatProjection(previews[idx])}
+                                                </div>
+                                            ) : (
+                                                <div className="small text-muted fst-italic">disabled</div>
+                                            )}
+                                        </div>
+                                    </li>
+                                ))}
                             </ol>
-                            <div className="alert alert-info small mb-0">
-                                <i className="bi bi-shield-check me-1" />
-                                Each reminder is sent <strong>at most once</strong> automatically — even if the cron
-                                runs multiple times.
-                            </div>
-                        </div>
-                    </div>
 
-                    <div className="card border-0 shadow-sm mt-3">
-                        <div className="card-body">
-                            <h6 className="fw-semibold mb-3">
-                                <i className="bi bi-clipboard-check me-2 text-primary" />
-                                Status check
-                            </h6>
-                            <ul className="list-unstyled small mb-0">
-                                <StatusRow ok={form.data.autosend_enabled} label="Autosend enabled" />
+                            <h6 className="fw-semibold mb-2 small">Status check</h6>
+                            <ul className="list-unstyled small mb-3">
+                                <StatusRow ok={form.data.autosend_enabled} label="Master switch on" />
                                 <StatusRow
                                     ok={onsendConfigured}
                                     label="Onsend configured"
                                     fixHref={onsendConfigured ? null : route('settings.onsend')}
                                 />
-                                <StatusRow ok={allTypesAssigned} label="All 3 templates assigned" />
+                                <StatusRow
+                                    ok={someEnabledAndAssigned}
+                                    label="≥1 slot ready"
+                                />
                                 <StatusRow
                                     ok={templates.length > 0}
                                     label={`Templates available (${templates.length})`}
                                     fixHref={templates.length === 0 ? route('templates.create') : null}
                                 />
                             </ul>
+
+                            <div className="alert alert-info small mb-0">
+                                <i className="bi bi-info-circle me-1" />
+                                Schedule changes apply to <strong>new leads only</strong>.
+                                Existing reminders keep their original due times.
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -234,9 +325,7 @@ function StatusRow({ ok, label, fixHref = null }: { ok: boolean; label: string; 
                 {label}
             </span>
             {!ok && fixHref && (
-                <Link href={fixHref} className="small text-decoration-none">
-                    fix →
-                </Link>
+                <Link href={fixHref} className="small text-decoration-none">fix →</Link>
             )}
         </li>
     );

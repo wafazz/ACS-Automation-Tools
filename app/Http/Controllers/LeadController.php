@@ -81,12 +81,21 @@ class LeadController extends Controller
             'note' => 'Lead created.',
         ]);
 
-        // Auto-spawn Day 1 / 3 / 7 follow-up reminders
+        // Auto-spawn 3 follow-up reminders, using subscriber's custom schedule
+        // if they've configured one (delay days + send time). Otherwise falls
+        // back to defaults (1/3/7 at 09:00).
+        $automation = $user->automation;
         foreach (ReminderType::autoTypes() as $type) {
+            $slot = $automation
+                ? $automation->slot($type)
+                : \App\Models\UserAutomation::defaultSlot($type);
+
             $lead->reminders()->create([
                 'user_id' => $user->id,
                 'type' => $type->value,
-                'due_at' => now()->addDays($type->defaultDelayDays())->setTime(9, 0),
+                'due_at' => now()
+                    ->addDays($slot['delay_days'])
+                    ->setTime($slot['hour'], $slot['minute']),
             ]);
         }
 
