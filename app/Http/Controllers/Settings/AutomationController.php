@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers\Settings;
 
-use App\Enums\ReminderType;
 use App\Http\Controllers\Controller;
 use App\Models\UserAutomation;
 use App\Services\OnsendService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -26,21 +26,9 @@ class AutomationController extends Controller
 
         $onsendConfigured = OnsendService::for($user->id)->isConfigured();
 
-        // Build slot data for the UI — falls back to defaults if user hasn't
-        // configured yet, so the form shows sensible starting values.
-        $slots = [];
-        foreach (ReminderType::autoTypes() as $type) {
-            $slot = $automation ? $automation->slot($type) : UserAutomation::defaultSlot($type);
-            $slots[] = [
-                'key' => $type->value,
-                'label' => $type->label(),
-                'enabled' => $slot['enabled'],
-                'delay_days' => $slot['delay_days'],
-                'hour' => $slot['hour'],
-                'minute' => $slot['minute'],
-                'template_id' => $slot['template_id'],
-            ];
-        }
+        $slots = $automation
+            ? $automation->slots()
+            : UserAutomation::defaultSlots();
 
         return Inertia::render('Settings/Automation', [
             'automation' => [
@@ -49,6 +37,7 @@ class AutomationController extends Controller
             'slots' => $slots,
             'templates' => $templates,
             'onsendConfigured' => $onsendConfigured,
+            'maxSlots' => UserAutomation::MAX_SLOTS,
         ]);
     }
 
@@ -58,8 +47,9 @@ class AutomationController extends Controller
 
         $validated = $request->validate([
             'autosend_enabled' => ['required', 'boolean'],
-            'slots' => ['required', 'array', 'size:3'],
-            'slots.*.key' => ['required', 'string'],
+            'slots' => ['required', 'array', 'min:0', 'max:' . UserAutomation::MAX_SLOTS],
+            'slots.*.id' => ['nullable', 'string', 'max:64'],
+            'slots.*.label' => ['required', 'string', 'max:60'],
             'slots.*.enabled' => ['required', 'boolean'],
             'slots.*.delay_days' => ['required', 'integer', 'min:0', 'max:365'],
             'slots.*.hour' => ['required', 'integer', 'min:0', 'max:23'],
@@ -68,21 +58,18 @@ class AutomationController extends Controller
         ]);
 
         $userTemplateIds = $user->templates()->pluck('id')->toArray();
-        $autoTypeValues = array_map(fn (ReminderType $t) => $t->value, ReminderType::autoTypes());
+        $cleanSlots = [];
 
-        $schedule = [];
         foreach ($validated['slots'] as $slot) {
-            // Only accept known slot keys (auto_day_1/3/7) — silently drop unknowns
-            if (! \in_array($slot['key'], $autoTypeValues, true)) {
-                continue;
-            }
-
             $templateId = $slot['template_id'] ?? null;
+            // Cross-user template references silently dropped to null
             if ($templateId !== null && ! \in_array((int) $templateId, $userTemplateIds, true)) {
-                $templateId = null; // Cross-user template references silently dropped
+                $templateId = null;
             }
 
-            $schedule[$slot['key']] = [
+            $cleanSlots[] = [
+                'id' => isset($slot['id']) && $slot['id'] !== '' ? (string) $slot['id'] : (string) Str::uuid(),
+                'label' => trim((string) $slot['label']),
                 'enabled' => (bool) $slot['enabled'],
                 'delay_days' => (int) $slot['delay_days'],
                 'hour' => (int) $slot['hour'],
@@ -95,7 +82,7 @@ class AutomationController extends Controller
             ['user_id' => $user->id],
             [
                 'autosend_enabled' => $validated['autosend_enabled'],
-                'schedule' => $schedule,
+                'schedule' => $cleanSlots,
             ],
         );
 

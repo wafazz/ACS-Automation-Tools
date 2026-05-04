@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Enums\LeadStatus;
-use App\Enums\ReminderType;
 use App\Http\Requests\StoreLeadRequest;
 use App\Http\Requests\UpdateLeadRequest;
 use App\Models\Lead;
@@ -81,21 +80,25 @@ class LeadController extends Controller
             'note' => 'Lead created.',
         ]);
 
-        // Auto-spawn 3 follow-up reminders, using subscriber's custom schedule
-        // if they've configured one (delay days + send time). Otherwise falls
-        // back to defaults (1/3/7 at 09:00).
+        // Auto-spawn one reminder per subscriber-defined slot. Each reminder
+        // carries its own template_id + slot_label (denormalized) so the
+        // autosend cron is self-contained — and editing the schedule later
+        // doesn't change the intent of reminders already in flight.
         $automation = $user->automation;
-        foreach (ReminderType::autoTypes() as $type) {
-            $slot = $automation
-                ? $automation->slot($type)
-                : \App\Models\UserAutomation::defaultSlot($type);
+        $slots = $automation
+            ? $automation->slots()
+            : \App\Models\UserAutomation::defaultSlots();
 
+        foreach ($slots as $slot) {
             $lead->reminders()->create([
                 'user_id' => $user->id,
-                'type' => $type->value,
+                'type' => 'auto',
+                'is_auto' => (bool) ($slot['enabled'] ?? false),
+                'template_id' => $slot['template_id'] ?? null,
+                'slot_label' => $slot['label'] ?? null,
                 'due_at' => now()
-                    ->addDays($slot['delay_days'])
-                    ->setTime($slot['hour'], $slot['minute']),
+                    ->addDays((int) ($slot['delay_days'] ?? 0))
+                    ->setTime((int) ($slot['hour'] ?? 9), (int) ($slot['minute'] ?? 0)),
             ]);
         }
 

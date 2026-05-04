@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Enums\ReminderType;
 use Database\Factories\ReminderFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -17,7 +16,10 @@ class Reminder extends Model
     protected $fillable = [
         'user_id',
         'lead_id',
-        'type',
+        'type',         // free-form string: 'manual' or 'auto'
+        'is_auto',      // true = autosend cron should pick this up
+        'template_id',  // denormalized at creation — used by autosend cron
+        'slot_label',   // human label shown in UI ("Welcome", "Day 3 nudge")
         'due_at',
         'completed_at',
         'dismissed_at',
@@ -29,7 +31,7 @@ class Reminder extends Model
     protected function casts(): array
     {
         return [
-            'type' => ReminderType::class,
+            'is_auto' => 'boolean',
             'due_at' => 'datetime',
             'completed_at' => 'datetime',
             'dismissed_at' => 'datetime',
@@ -47,9 +49,33 @@ class Reminder extends Model
         return $this->belongsTo(Lead::class);
     }
 
+    public function template(): BelongsTo
+    {
+        return $this->belongsTo(Template::class);
+    }
+
     public function isOpen(): bool
     {
         return $this->completed_at === null && $this->dismissed_at === null;
+    }
+
+    /**
+     * Display label: prefer the denormalized slot_label (e.g. "Welcome"),
+     * fall back to a humanized version of the type column.
+     */
+    public function displayLabel(): string
+    {
+        if ($this->slot_label) {
+            return $this->slot_label;
+        }
+        return match ($this->type) {
+            'manual' => 'Manual',
+            'auto' => 'Auto follow-up',
+            'auto_day_1' => '1st Follow-up',
+            'auto_day_3' => '2nd Follow-up',
+            'auto_day_7' => '3rd Follow-up',
+            default => ucfirst(str_replace('_', ' ', (string) $this->type)),
+        };
     }
 
     public function scopeOpen(Builder $query): Builder

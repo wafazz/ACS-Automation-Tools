@@ -2,12 +2,25 @@
 
 namespace App\Models;
 
-use App\Enums\ReminderType;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * Per-user automation rules. The `schedule` column stores a free-form
+ * array of slots:
+ *   [
+ *     {"id":"abc1","label":"Welcome","enabled":true,"delay_days":0,"hour":14,"minute":30,"template_id":5},
+ *     {"id":"abc2","label":"Day-2 nudge","enabled":true,"delay_days":2,"hour":9,"minute":0,"template_id":8},
+ *     ... (any number, capped server-side at MAX_SLOTS)
+ *   ]
+ *
+ * The `id` is a stable client-side key (used for React lists and to support
+ * reorder/remove). It's NOT a DB id.
+ */
 class UserAutomation extends Model
 {
+    public const MAX_SLOTS = 10;
+
     protected $fillable = [
         'user_id',
         'autosend_enabled',
@@ -28,55 +41,45 @@ class UserAutomation extends Model
     }
 
     /**
-     * Default slot config when subscriber hasn't customized — matches the
-     * legacy hardcoded behaviour (Day 1/3/7 at 09:00, all disabled).
+     * Default slot set for users who haven't customized — matches the legacy
+     * Day 1/3/7 at 09:00 behaviour, all disabled (safe default).
      *
-     * @return array{enabled: bool, delay_days: int, hour: int, minute: int, template_id: int|null}
+     * @return array<int, array<string, mixed>>
      */
-    public static function defaultSlot(ReminderType $type): array
+    public static function defaultSlots(): array
     {
         return [
-            'enabled' => false,
-            'delay_days' => $type->defaultDelayDays() ?? 0,
-            'hour' => 9,
-            'minute' => 0,
-            'template_id' => null,
+            ['id' => 'd1', 'label' => 'Day 1 follow-up', 'enabled' => false, 'delay_days' => 1, 'hour' => 9, 'minute' => 0, 'template_id' => null],
+            ['id' => 'd3', 'label' => 'Day 3 follow-up', 'enabled' => false, 'delay_days' => 3, 'hour' => 9, 'minute' => 0, 'template_id' => null],
+            ['id' => 'd7', 'label' => 'Day 7 follow-up', 'enabled' => false, 'delay_days' => 7, 'hour' => 9, 'minute' => 0, 'template_id' => null],
         ];
     }
 
     /**
-     * @return array{enabled: bool, delay_days: int, hour: int, minute: int, template_id: int|null}
+     * @return array<int, array<string, mixed>>
      */
-    public function slot(ReminderType $type): array
+    public function slots(): array
     {
-        $stored = $this->schedule[$type->value] ?? null;
-        if (! is_array($stored)) {
-            return self::defaultSlot($type);
+        $stored = $this->schedule;
+        if (! is_array($stored) || empty($stored)) {
+            return self::defaultSlots();
         }
-
-        $defaults = self::defaultSlot($type);
-        return [
-            'enabled' => (bool) ($stored['enabled'] ?? $defaults['enabled']),
-            'delay_days' => (int) ($stored['delay_days'] ?? $defaults['delay_days']),
-            'hour' => (int) ($stored['hour'] ?? $defaults['hour']),
-            'minute' => (int) ($stored['minute'] ?? $defaults['minute']),
-            'template_id' => isset($stored['template_id']) && $stored['template_id'] !== null
-                ? (int) $stored['template_id']
-                : null,
-        ];
+        return array_values($stored);
     }
 
-    public function templateIdFor(ReminderType $type): ?int
-    {
-        return $this->slot($type)['template_id'];
-    }
-
-    public function isAutosendActiveFor(ReminderType $type): bool
+    /**
+     * Slots eligible for autosend (master switch on + slot enabled + has template).
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function activeSlots(): array
     {
         if (! $this->autosend_enabled) {
-            return false;
+            return [];
         }
-        $slot = $this->slot($type);
-        return $slot['enabled'] && $slot['template_id'] !== null;
+        return array_values(array_filter(
+            $this->slots(),
+            fn ($s) => ($s['enabled'] ?? false) && ! empty($s['template_id']),
+        ));
     }
 }
