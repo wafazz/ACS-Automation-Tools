@@ -96,6 +96,15 @@ class AutoSendReminders extends Command
                 $reminder->update(['auto_sent_at' => $now]);
                 $template->increment('use_count');
 
+                // Bump campaign counters when this reminder belongs to a campaign
+                if ($reminder->campaign_id) {
+                    \App\Models\LeadCampaign::where('id', $reminder->campaign_id)
+                        ->where('status', 'scheduled')
+                        ->update(['status' => 'sending']);
+                    \App\Models\LeadCampaign::where('id', $reminder->campaign_id)
+                        ->increment('sent_count');
+                }
+
                 // Log into the lead's activity timeline
                 $reminder->lead->statusHistory()->create([
                     'changed_by' => $user->id,
@@ -108,9 +117,18 @@ class AutoSendReminders extends Command
                 $sent++;
             } catch (Throwable $e) {
                 $failed++;
+                if ($reminder->campaign_id) {
+                    \App\Models\LeadCampaign::where('id', $reminder->campaign_id)
+                        ->increment('failed_count');
+                }
                 $this->warn("Reminder #{$reminder->id} failed: " . $e->getMessage());
             }
         }
+
+        // Mark fully-completed campaigns
+        \App\Models\LeadCampaign::where('status', 'sending')
+            ->whereDoesntHave('reminders', fn ($q) => $q->whereNull('auto_sent_at')->whereNull('dismissed_at'))
+            ->update(['status' => 'completed']);
 
         $this->info(sprintf(
             '%s: sent=%d, skipped=%d, failed=%d',

@@ -96,6 +96,11 @@ class User extends Authenticatable
         return $this->hasOne(UserAutomation::class);
     }
 
+    public function leadCampaigns(): HasMany
+    {
+        return $this->hasMany(LeadCampaign::class);
+    }
+
     public function activeSubscription(): ?Subscription
     {
         return $this->subscriptions()

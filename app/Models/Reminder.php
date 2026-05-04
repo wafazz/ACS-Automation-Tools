@@ -16,7 +16,8 @@ class Reminder extends Model
     protected $fillable = [
         'user_id',
         'lead_id',
-        'type',         // free-form string: 'manual' or 'auto'
+        'campaign_id',  // nullable — set when this reminder was spawned by a campaign
+        'type',         // free-form: 'manual' / 'auto' / 'campaign'
         'is_auto',      // true = autosend cron should pick this up
         'template_id',  // denormalized at creation — used by autosend cron
         'slot_label',   // human label shown in UI ("Welcome", "Day 3 nudge")
@@ -52,6 +53,11 @@ class Reminder extends Model
     public function template(): BelongsTo
     {
         return $this->belongsTo(Template::class);
+    }
+
+    public function campaign(): BelongsTo
+    {
+        return $this->belongsTo(LeadCampaign::class, 'campaign_id');
     }
 
     public function isOpen(): bool

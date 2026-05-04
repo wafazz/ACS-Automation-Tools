@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\UsersController as AdminUsersController;
 use App\Http\Controllers\AffiliateController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\BillingController;
+use App\Http\Controllers\CampaignController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\ProfileController;
@@ -80,6 +81,15 @@ Route::middleware('auth')->group(function () {
     // Per-user automation rules (auto-send Day 1/3/7 reminders via Onsend)
     Route::get('settings/automation', [UserAutomationController::class, 'index'])->name('settings.automation');
     Route::patch('settings/automation', [UserAutomationController::class, 'update'])->name('settings.automation.update');
+
+    // Lead campaigns (batch sends to filtered/specific leads)
+    Route::get('campaigns', [CampaignController::class, 'index'])->name('campaigns.index');
+    Route::get('campaigns/create', [CampaignController::class, 'create'])->name('campaigns.create');
+    Route::post('campaigns/target-count', [CampaignController::class, 'targetCount'])->name('campaigns.target-count');
+    Route::post('campaigns', [CampaignController::class, 'store'])->name('campaigns.store');
+    Route::get('campaigns/{campaign}', [CampaignController::class, 'show'])->name('campaigns.show');
+    Route::patch('campaigns/{campaign}/cancel', [CampaignController::class, 'cancel'])->name('campaigns.cancel');
+    Route::delete('campaigns/{campaign}', [CampaignController::class, 'destroy'])->name('campaigns.destroy');
 });
 
 // Admin routes
